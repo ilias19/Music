@@ -102,7 +102,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install the test driver
-        run: pip install playwright==1.56.0
+        run: pip install playwright==1.56.0 websockets==15.0.1
 
       - name: Enable KVM
         run: |

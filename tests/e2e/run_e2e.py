@@ -23,6 +23,8 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+sys.path.insert(0, str(Path(__file__).parent))
+
 ASSETS = Path(__file__).parent / "assets"
 OUT = Path(__file__).parent / "out"
 PKG = "com.ilias.practiceroom"
@@ -706,7 +708,10 @@ def main() -> int:
                             print(f"   attach: version={version} targets={[t.get('url') for t in targets]}", flush=True)
                     except Exception as e:
                         last_err = f"devtools http: {e}"; time.sleep(2); continue
-                    for endpoint in ("http://127.0.0.1:9222", version.get("webSocketDebuggerUrl", "")):
+                    import cdp_relay  # WebView rejects a call Playwright makes while attaching
+                    relay = getattr(connect, "relay", None) or cdp_relay.start(version["webSocketDebuggerUrl"], 9223)
+                    connect.relay = relay
+                    for endpoint in (relay,):
                         if not endpoint:
                             continue
                         try:
