@@ -1,0 +1,532 @@
+[
+ {
+  "check": "gallery has the 5 bundled pieces",
+  "ok": true,
+  "detail": "['Self-test', 'Ode to Joy (Beethoven)', 'Chorale BWV 66.6 (Bach)', \"Lascia ch'io pianga (Handel)\", 'Der Lindenbaum (Schubert)', 'Maple Leaf Rag (Joplin)']"
+ },
+ {
+  "check": "search filters the library",
+  "ok": true,
+  "detail": "['Chorale BWV 66.6 (Bach)']"
+ },
+ {
+  "check": "search with no match says so",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "MusicXML import is ready",
+  "ok": true,
+  "detail": "{\"parts\": 1, \"measures\": 8, \"key\": \"C major / A minor\", \"fifths\": 0, \"time\": \"4/4\", \"tempo\": 100}"
+ },
+ {
+  "check": "compressed .mxl import works",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "a .txt file is refused with a message and creates nothing",
+  "ok": true,
+  "detail": "Skipped 1 file(s): use PDF, images or MusicXML."
+ },
+ {
+  "check": "scanning shows a progress card",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "photo scan succeeds",
+  "ok": true,
+  "detail": "19.8 s, None"
+ },
+ {
+  "check": "photo scan: 8 bars, 4/4",
+  "ok": true,
+  "detail": "{\"parts\": 1, \"measures\": 8, \"key\": \"C major / A minor\", \"fifths\": 0, \"time\": \"4/4\", \"tempo\": null, \"scan_seconds\": 21}"
+ },
+ {
+  "check": "photo scan: notes match Ode to Joy",
+  "ok": true,
+  "detail": "EEFGGFEDCCDEEDD"
+ },
+ {
+  "check": "two images become one score",
+  "ok": true,
+  "detail": "{'parts': 1, 'measures': 8, 'key': 'C major / A minor', 'fifths': 0, 'time': '4/4', 'tempo': None, 'scan_seconds': 18} in 17.5 s"
+ },
+ {
+  "check": "multi-page score keeps both page images",
+  "ok": true,
+  "detail": "2"
+ },
+ {
+  "check": "PDF scan succeeds with 4 parts",
+  "ok": true,
+  "detail": "{'parts': 4, 'measures': 10, 'key': 'A major / F# minor', 'fifths': 3, 'time': '4/4', 'tempo': None, 'scan_seconds': 33} in 33.8 s"
+ },
+ {
+  "check": "an image without music fails with a readable message",
+  "ok": true,
+  "detail": "page 1: No noteheads found"
+ },
+ {
+  "check": "failed card is shown",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "failed card can be deleted",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "real lead-sheet screenshot scans",
+  "ok": true,
+  "detail": "{'parts': 1, 'measures': 80, 'key': 'C major / A minor', 'fifths': 0, 'time': '4/4', 'tempo': 150, 'scan_seconds': 43} in 44.0 s"
+ },
+ {
+  "check": "lead sheet keeps its lyrics",
+  "ok": true,
+  "detail": "134 syllables"
+ },
+ {
+  "check": "lead sheet keeps its chord symbols",
+  "ok": true,
+  "detail": "4 chords"
+ },
+ {
+  "check": "lead sheet tempo is read from the page (150)",
+  "ok": true,
+  "detail": "150 bpm"
+ },
+ {
+  "check": "lyrics are drawn under the notes",
+  "ok": true,
+  "detail": "187 words drawn"
+ },
+ {
+  "check": "play makes sound",
+  "ok": true,
+  "detail": "peak 0.068"
+ },
+ {
+  "check": "first note is E4 at bar 1",
+  "ok": true,
+  "detail": "{'track': 0, 'midi': 64, 'time': 162.13466666666667, 'at': 162.05466666666666}"
+ },
+ {
+  "check": "pause keeps the position",
+  "ok": true,
+  "detail": "posQ 3.65 after 2 s at 100 bpm"
+ },
+ {
+  "check": "tempo 200 plays twice as fast",
+  "ok": true,
+  "detail": "bar 5 after 4.8 s"
+ },
+ {
+  "check": "tempo changes take effect while playing",
+  "ok": true,
+  "detail": "posQ 10.46"
+ },
+ {
+  "check": "count-in gives one bar before the music",
+  "ok": true,
+  "detail": "first note 2.57 s after play"
+ },
+ {
+  "check": "count-in clicks are heard",
+  "ok": true,
+  "detail": "4 clicks"
+ },
+ {
+  "check": "metronome clicks on every beat",
+  "ok": true,
+  "detail": "5 clicks in 2.5 s"
+ },
+ {
+  "check": "metronome off: no clicks",
+  "ok": true,
+  "detail": "0"
+ },
+ {
+  "check": "playback stops at the end",
+  "ok": true,
+  "detail": "{\"playing\": false, \"posQ\": 0}"
+ },
+ {
+  "check": "transpose display shows +2",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "header says it is transposed",
+  "ok": true,
+  "detail": "transposed +2 semitones \u00b7 4/4 \u00b7 8 bars"
+ },
+ {
+  "check": "score is rewritten in D major",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "transposed playback starts on F#4",
+  "ok": true,
+  "detail": "[{'track': 0, 'midi': 66, 'time': 190.38266666666667, 'at': 190.39333333333332}]"
+ },
+ {
+  "check": "transpose stops at -12",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "back to original key",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "tapping a bar moves there",
+  "ok": true,
+  "detail": "bar 3"
+ },
+ {
+  "check": "shift-tap sets a loop 3-4",
+  "ok": true,
+  "detail": "{\"on\": true, \"a\": 2, \"b\": 3}"
+ },
+ {
+  "check": "loop button shows the range",
+  "ok": true,
+  "detail": "bars 3\u20134"
+ },
+ {
+  "check": "loop range is highlighted",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "loop plays only bars 3-4 and repeats",
+  "ok": true,
+  "detail": "bars [3, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4]"
+ },
+ {
+  "check": "loop notes are those of bars 3-4",
+  "ok": true,
+  "detail": "[60, 62, 64]"
+ },
+ {
+  "check": "loop button turns the loop off",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "loop button turns it back on",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "tapping outside the loop cancels it",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "play skips the 8 silent intro bars",
+  "ok": true,
+  "detail": "bar 9"
+ },
+ {
+  "check": "sound starts immediately",
+  "ok": true,
+  "detail": "peak 0.055"
+ },
+ {
+  "check": "tapping bar 1 plays the intro",
+  "ok": true,
+  "detail": "bar 1"
+ },
+ {
+  "check": "lead sheet has Melody and Harmony tracks",
+  "ok": true,
+  "detail": "[{'name': 'Melody', 'count': 175, 'mute': False, 'solo': False, 'db': 0, 'instrument': 'piano', 'hidden': False}, {'name': 'Harmony', 'count': 15, 'mute': False, 'solo': False, 'db': 0, 'instrument': 'piano', 'hidden': False}]"
+ },
+ {
+  "check": "mixer opens",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "muting every track is silent",
+  "ok": true,
+  "detail": "0.099 -> 0.000"
+ },
+ {
+  "check": "solo plays a muted track",
+  "ok": true,
+  "detail": "0.070"
+ },
+ {
+  "check": "hiding Melody hides its notes and beams",
+  "ok": true,
+  "detail": "0 beams visible"
+ },
+ {
+  "check": "Show all notes brings them back",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "instrument change still plays",
+  "ok": true,
+  "detail": "0.079"
+ },
+ {
+  "check": "side panel opens",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "zoom control opens",
+  "ok": true,
+  "detail": "100%"
+ },
+ {
+  "check": "zoom + makes the score bigger",
+  "ok": true,
+  "detail": "3836 -> 5241 px, 140%"
+ },
+ {
+  "check": "zoomed score doesn't scroll sideways",
+  "ok": true,
+  "detail": "0 px"
+ },
+ {
+  "check": "zoom \u2212 makes it smaller",
+  "ok": true,
+  "detail": "3836 -> 2679 px"
+ },
+ {
+  "check": "zoom is remembered for other scores",
+  "ok": true,
+  "detail": "0.7"
+ },
+ {
+  "check": "zoom % shows the remembered value",
+  "ok": true,
+  "detail": "70%"
+ },
+ {
+  "check": "pinching out zooms in",
+  "ok": true,
+  "detail": "0.7 -> 1.4"
+ },
+ {
+  "check": "Fit resets zoom to 100%",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "zoom control closes",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "typed tempo is applied",
+  "ok": true,
+  "detail": "137"
+ },
+ {
+  "check": "typed tempo is clamped",
+  "ok": true,
+  "detail": "220"
+ },
+ {
+  "check": "empty tempo keeps the old value",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "typing in tempo box doesn't start playback",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "score title is drawn once",
+  "ok": true,
+  "detail": "1"
+ },
+ {
+  "check": "'Original scan' reachable from the side panel on phones",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "original page images load",
+  "ok": true,
+  "detail": "1 images"
+ },
+ {
+  "check": "recording starts",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "recording is saved",
+  "ok": true,
+  "detail": "1 takes"
+ },
+ {
+  "check": "saved take plays back (has a duration)",
+  "ok": true,
+  "detail": "inf"
+ },
+ {
+  "check": "take is labelled with tempo",
+  "ok": true,
+  "detail": "10/22/26, 8:05 PM | SaveDelete | 0:03 \u00b7 100 bpm"
+ },
+ {
+  "check": "take can be deleted",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "85-bar piano score opens",
+  "ok": true,
+  "detail": "3.5 s"
+ },
+ {
+  "check": "big score opens in reasonable time",
+  "ok": true,
+  "detail": "3.5 s"
+ },
+ {
+  "check": "big score plays",
+  "ok": true,
+  "detail": "36 notes in 2 s"
+ },
+ {
+  "check": "leaving a score while playing stops the sound",
+  "ok": true,
+  "detail": "level after leaving 0.000"
+ },
+ {
+  "check": "tapping a bar while playing jumps there and keeps playing",
+  "ok": true,
+  "detail": "bar 6, playing True"
+ },
+ {
+  "check": "rapid transposing while playing settles on +4 and keeps playing",
+  "ok": true,
+  "detail": "{\"semitones\": 4, \"playing\": true}"
+ },
+ {
+  "check": "opening another score resets tempo, key and loop",
+  "ok": true,
+  "detail": "{\"bpm\": 96, \"semitones\": 0}"
+ },
+ {
+  "check": "its mixer shows its own tracks",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "practice time is recorded",
+  "ok": true,
+  "detail": "<1m"
+ },
+ {
+  "check": "score cards show time practised",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "rename is saved",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "delete removes the score",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "scores survive a restart",
+  "ok": true,
+  "detail": "11 -> 11"
+ },
+ {
+  "check": "Back from a score returns to the library",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "exports are saved in Downloads/Practice Room",
+  "ok": true,
+  "detail": "Chorale BWV 66.6 (Bach) (+1).mid | Chorale BWV 66.6 (Bach) (+1).musicxml | Chorale BWV 66.6 (Bach) (+1).pdf"
+ },
+ {
+  "check": "Choose files opens Android's file picker",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "file picker opens again after cancelling",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "scanning shows a notification",
+  "ok": true,
+  "detail": "android.title=String (Scanning \u201cbackground scan\u201d) | android.text=String (Finding the staves) | android.title=String (Serial console enabled) | android.text=String (Performance is impacted. To disable, check bootloader.) | android.title=String (Configure AT Translated Set 2 keyboard) | android.text=S"
+ },
+ {
+  "check": "scan finishes while the app is in the background",
+  "ok": true,
+  "detail": "10 s"
+ },
+ {
+  "check": "background scan is about as fast as in the app",
+  "ok": true,
+  "detail": "in the app 43 s, in the background 44 s"
+ },
+ {
+  "check": "the background scan is ready in the library",
+  "ok": true,
+  "detail": "{'parts': 1, 'measures': 8, 'key': 'C major / A minor', 'fifths': 0, 'time': '4/4', 'tempo': None, 'scan_seconds': 11}"
+ },
+ {
+  "check": "tapping the notification opens the score",
+  "ok": true,
+  "detail": "#/score/72399ba50303"
+ },
+ {
+  "check": "rotating keeps the open score",
+  "ok": true,
+  "detail": ""
+ },
+ {
+  "check": "dark mode follows the phone setting",
+  "ok": true,
+  "detail": "rgb(20, 23, 31)"
+ },
+ {
+  "check": "after the theme change the same score is still open",
+  "ok": true,
+  "detail": "#/score/ec52c9bf49ec -> #/score/ec52c9bf49ec"
+ },
+ {
+  "check": "switching back to light works",
+  "ok": true,
+  "detail": "rgb(241, 236, 227)"
+ },
+ {
+  "check": "PDF saved on the phone is valid",
+  "ok": true,
+  "detail": "622128 bytes, 1 page(s)"
+ },
+ {
+  "check": "no JavaScript errors during the run",
+  "ok": true,
+  "detail": ""
+ }
+]
