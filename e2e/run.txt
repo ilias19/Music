@@ -1,0 +1,153 @@
+   attach: pid=['3204'] sockets=['webview_devtools_remote_3204']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:36977/']
+   attached via ws://127.0.0.1:9223 to http://127.0.0.1:36977/
+
+== library_basics
+  PASS  gallery has the 5 bundled pieces  — ['Self-test', 'Self-test', 'Ode to Joy (Beethoven)', 'Chorale BWV 66.6 (Bach)', "Lascia ch'io pianga (Handel)", 'Der Lindenbaum (Schubert)', 'Maple Leaf Rag (Joplin)']
+  PASS  search filters the library  — ['Chorale BWV 66.6 (Bach)']
+  PASS  search with no match says so
+
+== import_files
+  PASS  MusicXML import is ready  — {"parts": 1, "measures": 8, "key": "C major / A minor", "fifths": 0, "time": "4/4", "tempo": 100}
+  PASS  compressed .mxl import works
+  PASS  a .txt file is refused with a message and creates nothing  — Skipped 1 file(s): use PDF, images or MusicXML.
+
+== scanning
+  PASS  scanning shows a progress card
+  PASS  photo scan succeeds  — 21.9 s, None
+  PASS  photo scan: 8 bars, 4/4  — {"parts": 1, "measures": 8, "key": "C major / A minor", "fifths": 0, "time": "4/4", "tempo": null}
+  PASS  photo scan: notes match Ode to Joy  — EEFGGFEDCCDEEDD
+  PASS  two images become one score  — {'parts': 1, 'measures': 8, 'key': 'C major / A minor', 'fifths': 0, 'time': '4/4', 'tempo': None} in 12.5 s
+  PASS  multi-page score keeps both page images  — 2
+  PASS  PDF scan succeeds with 4 parts  — {'parts': 4, 'measures': 10, 'key': 'A major / F# minor', 'fifths': 3, 'time': '4/4', 'tempo': None} in 41.2 s
+  PASS  an image without music fails with a readable message  — page 1: No noteheads found
+  FAIL  failed card is shown
+  PASS  failed card can be deleted
+
+== lead_sheet_scan
+  PASS  real lead-sheet screenshot scans  — {'parts': 1, 'measures': 80, 'key': 'C major / A minor', 'fifths': 0, 'time': '4/4', 'tempo': None} in 37.0 s
+
+== playback
+  PASS  play makes sound  — peak 0.068
+  PASS  first note is E4 at bar 1  — {'track': 0, 'midi': 64, 'time': 163.76933333333335, 'at': 163.68933333333334}
+  PASS  pause keeps the position  — posQ 3.65 after 2 s at 100 bpm
+  PASS  tempo 200 plays twice as fast  — bar 5 after 4.8 s
+  PASS  tempo changes take effect while playing  — posQ 10.31
+  PASS  count-in gives one bar before the music  — first note 2.57 s after play
+  PASS  count-in clicks are heard  — 4 clicks
+  PASS  metronome clicks on every beat  — 5 clicks in 2.5 s
+  PASS  metronome off: no clicks  — 0
+  PASS  playback stops at the end  — {"playing": false, "posQ": 0}
+
+== transpose
+  PASS  transpose display shows +2
+  PASS  header says it is transposed  — transposed +2 semitones · 4/4 · 8 bars
+  PASS  score is rewritten in D major
+  PASS  transposed playback starts on F#4  — [{'track': 0, 'midi': 66, 'time': 192.20133333333334, 'at': 192.12133333333333}]
+  PASS  transpose stops at -12
+  PASS  back to original key
+
+== loops
+  PASS  tapping a bar moves there  — bar 3
+  PASS  shift-tap sets a loop 3-4  — {"on": true, "a": 2, "b": 3}
+  PASS  loop button shows the range  — bars 3–4
+  PASS  loop range is highlighted
+  PASS  loop plays only bars 3-4 and repeats  — bars [3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4, 4, 3, 3, 3, 3, 3, 4, 4, 4]
+  PASS  loop notes are those of bars 3-4  — [60, 62, 64]
+  PASS  loop button turns the loop off
+  PASS  loop button turns it back on
+  PASS  tapping outside the loop cancels it
+
+== intro_skip
+  PASS  play skips the 8 silent intro bars  — bar 9
+  PASS  sound starts immediately  — peak 0.036
+  PASS  tapping bar 1 plays the intro  — bar 1
+
+== mixer
+  PASS  lead sheet has Melody and Harmony tracks  — [{'name': 'Melody', 'count': 175, 'mute': False, 'solo': False, 'db': 0, 'instrument': 'piano', 'hidden': False}, {'name': 'Harmony', 'count': 15, 'mute': False, 'solo': False, 'db': 0, 'instrument': 'piano', 'hidden': False}]
+  PASS  mixer opens
+  PASS  muting every track is silent  — 0.088 -> 0.000
+  PASS  solo plays a muted track  — 0.073
+  PASS  hiding Melody hides its notes and beams  — 0 beams visible
+  PASS  Show all notes brings them back
+  PASS  instrument change still plays  — 0.083
+
+== display
+  PASS  side panel opens
+  PASS  zoom makes the score bigger  — 3836 -> 5241 px
+  PASS  score title is drawn once  — 1
+
+== compare_original
+  PASS  'Original scan' reachable from the side panel on phones
+  PASS  original page images load  — 1 images
+
+== recording
+  PASS  recording starts
+  PASS  recording is saved  — 1 takes
+  PASS  saved take plays back (has a duration)  — inf
+  PASS  take is labelled with tempo  — 10/22/26, 2:08 PM | SaveDelete | 0:03 · 100 bpm
+  PASS  take can be deleted
+
+== exports
+
+== big_score
+  PASS  85-bar piano score opens  — 3.5 s
+  PASS  big score opens in reasonable time  — 3.5 s
+  PASS  big score plays  — 36 notes in 2 s
+
+== navigation_edge_cases
+  FAIL  leaving a score while playing stops the sound  — level after leaving 0.004
+  PASS  tapping a bar while playing jumps there and keeps playing  — bar 6, playing True
+  PASS  rapid transposing while playing settles on +4 and keeps playing  — {"semitones": 4, "playing": true}
+  PASS  opening another score resets tempo, key and loop  — {"bpm": 96, "semitones": 0}
+  PASS  its mixer shows its own tracks
+
+== practice_stats
+  PASS  practice time is recorded  — <1m
+  PASS  score cards show time practised
+
+== rename_and_delete
+  PASS  rename is saved
+  PASS  delete removes the score
+
+== persistence
+Task exception was never retrieved
+future: <Task finished name='Task-10' coro=<start.<locals>.handler.<locals>.up_to_client() done, defined at /home/runner/work/Music/Music/tests/e2e/cdp_relay.py:34> exception=ConnectionClosedError(None, None, None)>
+Traceback (most recent call last):
+  File "/home/runner/work/Music/Music/tests/e2e/cdp_relay.py", line 35, in up_to_client
+    async for msg in up:
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+    yield await self.recv()
+          ^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 322, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+   attach: pid=[] sockets=[]
+   attached via ws://127.0.0.1:9223 to http://127.0.0.1:35587/
+  PASS  scores survive a restart  — 12 -> 12
+
+== android_specific
+  PASS  Back from a score returns to the library
+  PASS  exports are saved in Downloads/Practice Room  — Chorale BWV 66.6 (Bach) (+1).mid | Chorale BWV 66.6 (Bach) (+1).musicxml | Chorale BWV 66.6 (Bach) (+1).pdf
+  PASS  Choose files opens Android's file picker
+  PASS  file picker opens again after cancelling
+  PASS  rotating keeps the open score
+  FAIL  dark mode follows the phone setting  — rgb(241, 236, 227)
+  FAIL  no JavaScript errors during the run  — Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022"); Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022"); Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022")
+Task exception was never retrieved
+future: <Task finished name='Task-723' coro=<start.<locals>.handler.<locals>.client_to_up() done, defined at /home/runner/work/Music/Music/tests/e2e/cdp_relay.py:23> exception=ConnectionClosedError(None, None, None)>
+Traceback (most recent call last):
+  File "/home/runner/work/Music/Music/tests/e2e/cdp_relay.py", line 24, in client_to_up
+    async for msg in client:
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+    yield await self.recv()
+          ^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 322, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+
+78/82 checks passed
+  FAILED: failed card is shown  
+  FAILED: leaving a score while playing stops the sound  level after leaving 0.004
+  FAILED: dark mode follows the phone setting  rgb(241, 236, 227)
+  FAILED: no JavaScript errors during the run  Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022"); Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022"); Error: <rect> attribute width: A negative value is not valid. ("-13.039757500000022")
