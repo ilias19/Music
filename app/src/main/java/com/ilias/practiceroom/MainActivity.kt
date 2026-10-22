@@ -90,11 +90,28 @@ class MainActivity : ComponentActivity() {
             }
         })
 
-        val selfTest = intent.getBooleanExtra("selftest", false)
-        thread(name = "startup") { startBackend(selfTest) }
+        val selfTest = intent.getBooleanExtra("selftest", false) && savedInstanceState == null
+        // After a theme change the activity is rebuilt: come back to the same screen.
+        val route = savedInstanceState?.getString("route")?.takeIf { it.startsWith("#/") } ?: ""
+        uiMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        thread(name = "startup") { startBackend(selfTest, route) }
     }
 
-    private fun startBackend(selfTest: Boolean) {
+    private var uiMode = 0
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val night = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        // The WebView only reads light/dark when it's created; rebuild so the page follows the phone.
+        if (night != uiMode) { uiMode = night; recreate() }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        web.url?.substringAfter('#', "")?.takeIf { it.isNotEmpty() }?.let { outState.putString("route", "#$it") }
+    }
+
+    private fun startBackend(selfTest: Boolean, route: String = "") {
         try {
             val files = AppFiles(this)
             val token = UUID.randomUUID().toString()
@@ -113,7 +130,8 @@ class MainActivity : ComponentActivity() {
             origin = "http://127.0.0.1:$port"
             Log.i(TAG, "Backend listening on $origin")
             runOnUiThread {
-                web.loadUrl("$origin/__start?k=$token")
+                val h = if (route.isNotEmpty()) "&h=" + android.net.Uri.encode(route) else ""
+                web.loadUrl("$origin/__start?k=$token$h")
             }
             thread(name = "warmup") { runCatching { server.callAttr("warm_up") } }
             if (selfTest) runSelfTest(server, token)

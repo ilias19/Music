@@ -252,3 +252,19 @@ input[type=range] { accent-color: var(--accent); }
   #tempo { width: 90px; }
   .meta, #compare-btn { display: none; }
 }
+
+/* Phones in landscape: give the score the height */
+@media (max-height: 520px) {
+  .top { padding: 4px 10px; }
+  #score-title { font-size: 16px; }
+  .meta { display: none; }
+  .transport { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); gap: 12px; }
+  .t-group { flex-wrap: nowrap; gap: 8px; }
+  .play { width: 40px; height: 40px; }
+  .rec, .icon-btn { width: 34px; height: 34px; }
+  .ctl-lbl { display: none; }
+  #tempo { width: 90px; }
+  .toggle { padding: 6px 11px; white-space: nowrap; }
+  .paper-scroll { padding: 8px 0; }
+  .mixer { max-height: 88%; }
+}

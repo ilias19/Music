@@ -35,8 +35,14 @@ def start(upstream: str, port: int = 9223) -> str:
                 async for msg in up:
                     await client.send(msg)
 
+            async def quiet(coro):
+                try:
+                    await coro
+                except websockets.ConnectionClosed:
+                    pass   # the app was restarted or the test finished
+
             done, pending = await asyncio.wait(
-                [asyncio.ensure_future(client_to_up()), asyncio.ensure_future(up_to_client())],
+                [asyncio.ensure_future(quiet(client_to_up())), asyncio.ensure_future(quiet(up_to_client()))],
                 return_when=asyncio.FIRST_COMPLETED)
             for t in pending:
                 t.cancel()

@@ -302,10 +302,18 @@ const Sound = (() => {
     master.gain.setValueAtTime(master.gain.value, now);
     master.gain.linearRampToValueAtTime(0, now + 0.04);
     for (const v of voices.values()) v.inst.releaseAll?.(now + 0.04);
-    master.gain.setValueAtTime(1, now + 0.3);
+    // Stay closed until the next play(): sample releases ring for ~1 s and notes
+    // already scheduled in the look-ahead window would otherwise still be heard.
   }
 
-  return { init, note, click, setTrack, silence, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; } };
+  function open(at) {
+    if (!master) return;
+    master.gain.cancelScheduledValues(at);
+    master.gain.setValueAtTime(0, at);
+    master.gain.linearRampToValueAtTime(1, at + 0.01);
+  }
+
+  return { init, note, click, setTrack, silence, open, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; } };
 })();
 
 // Many files repeat the title as the movement title; OSMD would print it twice.
@@ -711,6 +719,7 @@ const Player = (() => {
       toast(`Skipped ${introBars} empty bar${introBars > 1 ? "s" : ""} at the start (tap bar 1 to hear them)`);
     }
     let start = Tone.now() + 0.08;
+    Sound.open(start - 0.01);
     if (countIn) {
       const m = measures[steps[stepIndexAt(posQ)].measure] || measures[0];
       const beatSec = (m.beatQ * 60) / bpm;
@@ -1037,7 +1046,7 @@ const Player = (() => {
     try {
       const xml = await api(`/api/scores/${sid}/musicxml?semitones=${semitones}`);
       const pdfOsmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(holder, {
-        autoResize: false, backend: "svg", pageFormat: "A4_P", pageBackgroundColor: "#FFFFFF",
+        autoResize: false, backend: "svg", pageFormat: "A4_P",
         drawTitle: true, drawComposer: true, drawPartNames: true,
       });
       await pdfOsmd.load(xml);

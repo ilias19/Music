@@ -78,6 +78,15 @@ class App:
             return
         self.errors.append(text[:300])
 
+    def reattach(self):
+        """Android: the activity (and its WebView) was rebuilt; connect to the new page."""
+        self.page = self._reattach()
+        self.page.on("pageerror", lambda e: self.errors.append(f"pageerror: {e}"))
+        self.page.on("console", lambda m: m.type == "error" and self._console(m.text))
+        self.page.wait_for_selector("#library, #player", state="attached", timeout=120000)
+        self.page.wait_for_timeout(800)
+        self.page.evaluate("window.confirm = () => true")
+
     # ---- navigation ----
     def library(self):
         self.page.evaluate("location.hash = '#/'")
@@ -246,6 +255,10 @@ def scanning(app: App, android: bool):
     s = app.wait_card("no music")
     check("an image without music fails with a readable message", s["status"] == "failed" and bool(s["error"]), s.get("error", "")[:120])
     app.library()
+    try:
+        app.page.wait_for_selector(".card.failed", timeout=15000)
+    except Exception:
+        pass
     card = app.page.locator(".card.failed").first
     check("failed card is shown", card.count() == 1)
     card.locator(".del").click()
@@ -663,15 +676,33 @@ def android_specific(app: App):
     time.sleep(2)
     check("rotating keeps the open score", still)
 
-    # dark mode
+    # dark mode: the app rebuilds its screen and comes back to the open score
+    app.open("Ode to Joy (Beethoven)")
+    route = app.page.evaluate("location.hash")
     adb("shell", "cmd", "uimode", "night", "yes")
-    time.sleep(3)
+    time.sleep(6)
+    app.reattach()
+    app.wait_loaded()
+    bg = app.page.evaluate("getComputedStyle(document.body).backgroundColor")
+    back_route = app.page.evaluate("location.hash")
+    app.page.screenshot(path=str(OUT / "dark_player.png"))
     app.library()
     app.page.screenshot(path=str(OUT / "dark_library.png"))
-    bg = app.page.evaluate("getComputedStyle(document.body).backgroundColor")
+    check("dark mode follows the phone setting", bg == "rgb(20, 23, 31)", bg)
+    check("after the theme change the same score is still open", back_route == route, f"{route} -> {back_route}")
     adb("shell", "cmd", "uimode", "night", "no")
-    time.sleep(2)
-    check("dark mode follows the phone setting", bg in ("rgb(20, 23, 31)",), bg)
+    time.sleep(6)
+    app.reattach()
+    bg = app.page.evaluate("getComputedStyle(document.body).backgroundColor")
+    check("switching back to light works", bg == "rgb(241, 236, 227)", bg)
+
+    # the exported PDF on the phone is a real PDF
+    pdf = subprocess.run(["adb", "exec-out", "cat", "/sdcard/Download/Practice Room/Chorale BWV 66.6 (Bach) (+1).pdf"],
+                         capture_output=True, timeout=60).stdout
+    (OUT / "exported_on_phone.pdf").write_bytes(pdf)
+    pages = pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages")
+    check("PDF saved on the phone is valid", pdf.startswith(b"%PDF") and len(pdf) > 10000 and pages >= 1,
+          f"{len(pdf)} bytes, {pages} page(s)")
 
 
 # ==================================================================== main ==
@@ -730,6 +761,18 @@ def main() -> int:
             browser, page = connect()
             page.wait_for_selector(".card", timeout=120000)
             app = App(page, android=True)
+
+            def _reattach():
+                nonlocal browser
+                for _ in range(20):
+                    try:
+                        browser, pg = connect()
+                        pg.evaluate("1")
+                        return pg
+                    except Exception:
+                        time.sleep(2)
+                raise RuntimeError("couldn't reattach")
+            app._reattach = _reattach
 
             def restart():
                 nonlocal browser

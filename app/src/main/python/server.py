@@ -541,8 +541,10 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/__start":  # the app opens this once with the launch secret
                 if params.get("k") not in S["tokens"]:
                     raise HTTPError(403, "Forbidden")
+                route = params.get("h", "")
+                route = route if re.fullmatch(r"#/[\w/]*", route) else ""
                 self._send(302, b"", "text/plain", {
-                    "Location": "/", "Set-Cookie": f"pr={params['k']}; Path=/; HttpOnly; SameSite=Strict"})
+                    "Location": "/" + route, "Set-Cookie": f"pr={params['k']}; Path=/; HttpOnly; SameSite=Strict"})
                 return
             if not self._authorised():
                 raise HTTPError(403, "Open Practice Room from the app")
