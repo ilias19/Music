@@ -281,6 +281,7 @@ def merge_pages(xmls: list[Path], title: str) -> str:
 
 def run_scan(sid: str, files: list[Path], title: str) -> None:
     import omr_android
+    started = time.time()
     try:
         update_score(sid, status="scanning")
         scan_progress(sid, title, "Preparing pages", 0.02)
@@ -295,9 +296,13 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
         omr_android.setup(S["bridge"], str(S["models"]))
         xmls, errors = [], []
         for i, p in enumerate(pages):
-            scan_progress(sid, title, f"Reading page {i + 1} of {len(pages)}", round(0.08 + 0.85 * i / len(pages), 3))
+            prefix = f"Page {i + 1} of {len(pages)}: " if len(pages) > 1 else ""
+
+            def on_progress(f, text, i=i, prefix=prefix):
+                scan_progress(sid, title, prefix + text, round(0.08 + 0.85 * (i + f) / len(pages), 3))
+
             try:
-                xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text)))
+                xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text, progress=on_progress)))
             except Exception as e:
                 traceback.print_exc()
                 errors.append(f"page {i + 1}: {e}")
@@ -308,15 +313,18 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
         for p in work.glob("*_teaser.png"):
             p.unlink()
         msg = f"Skipped {len(errors)} page(s) with no readable music" if errors else ""
+        info["scan_seconds"] = round(time.time() - started)
         update_score(sid, status="ready", message=msg, progress=1, info=info)
-        platform_call("scanFinished", sid, title, True, jobs.qsize())
+        print(f"Scan {sid}: {len(pages)} page(s) in {info['scan_seconds']} s", flush=True)
+        platform_call("scanFinished", sid, title, True, jobs.qsize(), info["scan_seconds"])
     except Exception as e:
         traceback.print_exc()
         update_score(sid, status="failed", error=str(e)[:500], message="")
-        platform_call("scanFinished", sid, title, False, jobs.qsize())
+        platform_call("scanFinished", sid, title, False, jobs.qsize(), round(time.time() - started))
 
 
 def scan_worker() -> None:
+    platform_call("boostThread")   # the phone lowers a background app's CPU share; ask for a normal one
     while True:
         sid, files, title = jobs.get()
         run_scan(sid, files, title)
@@ -749,6 +757,7 @@ def warm_up() -> None:
     try:
         print("Practice Room imports:", native_check(), flush=True)
         import omr_android
+        platform_call("boostThread")   # the runtime's worker threads are created here and inherit this
         omr_android.setup(S["bridge"], str(S["models"]))
         omr_android.preload()
         print(f"Scanner ready in {time.time() - t:.1f} s", flush=True)

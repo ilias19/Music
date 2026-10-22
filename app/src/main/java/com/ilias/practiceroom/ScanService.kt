@@ -97,10 +97,11 @@ class ScanService : Service() {
             }
         }
 
-        fun finished(ctx: Context, id: String, title: String, ok: Boolean) {
+        fun finished(ctx: Context, id: String, title: String, ok: Boolean, seconds: Int) {
             channels(ctx)
             if (appVisible) return
-            val text = if (ok) "Ready to play" else "Couldn't read this one. Tap to see why."
+            val took = if (seconds >= 60) "${seconds / 60} min ${seconds % 60} s" else "$seconds s"
+            val text = if (ok) "Ready to play · read in $took" else "Couldn't read this one. Tap to see why."
             val n = Notification.Builder(ctx, CH_DONE)
                 .setSmallIcon(R.drawable.ic_stat_note)
                 .setContentTitle(title)

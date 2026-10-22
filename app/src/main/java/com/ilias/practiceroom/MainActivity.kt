@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
     private var cameraUri: Uri? = null
     private var pendingMic: PermissionRequest? = null
 
-    private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { askBatteryOnce() }
     private val pickFiles = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         fileCallback?.onReceiveValue(uris.toTypedArray())
         fileCallback = null
@@ -126,10 +126,28 @@ class MainActivity : ComponentActivity() {
         super.onPause()
     }
 
+    /**
+     * Ask once to be left out of battery optimisation. Many phones (Samsung, Xiaomi, OnePlus…) slow down
+     * or stop apps in the background even while they show a notification; scanning a page needs the CPU.
+     */
+    private fun askBatteryOnce() {
+        val pm = getSystemService(POWER_SERVICE) as android.os.PowerManager
+        if (pm.isIgnoringBatteryOptimizations(packageName)) return
+        val prefs = getSharedPreferences("app", MODE_PRIVATE)
+        if (prefs.getBoolean("asked_battery", false)) return
+        prefs.edit().putBoolean("asked_battery", true).apply()
+        try {
+            @SuppressLint("BatteryLife")
+            val i = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))
+            startActivity(i)
+        } catch (_: ActivityNotFoundException) {}
+    }
+
     /** Ask once, after the first files are picked, so "score ready" can be shown when you're elsewhere. */
     private fun askNotificationsOnce() {
-        if (Build.VERSION.SDK_INT < 33) return
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        if (Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        ) { askBatteryOnce(); return }
         val prefs = getSharedPreferences("app", MODE_PRIVATE)
         if (prefs.getBoolean("asked_notifications", false)) return
         prefs.edit().putBoolean("asked_notifications", true).apply()

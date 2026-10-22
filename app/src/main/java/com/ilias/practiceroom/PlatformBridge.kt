@@ -24,8 +24,11 @@ class PlatformBridge(private val context: Context) {
     fun scanProgress(id: String, title: String, message: String, percent: Int, queued: Int) =
         ScanService.progress(context, ScanService.Progress(id, title, message, percent, queued))
 
-    fun scanFinished(id: String, title: String, ok: Boolean, queued: Int) =
-        ScanService.finished(context, id, title, ok)
+    fun scanFinished(id: String, title: String, ok: Boolean, queued: Int, seconds: Int) =
+        ScanService.finished(context, id, title, ok, seconds)
+
+    /** Scan threads: a little above normal priority, so they keep their CPU share when the app is in the background. */
+    fun boostThread() = android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_FOREGROUND)
 
     fun scanIdle() = ScanService.idle()
 

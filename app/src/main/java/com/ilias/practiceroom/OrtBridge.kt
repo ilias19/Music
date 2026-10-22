@@ -31,6 +31,11 @@ class OrtBridge {
         val opts = OrtSession.SessionOptions().apply {
             setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             setIntraOpNumThreads(threads)
+            // Idle worker threads sleep instead of spinning. Spinning helps a little when the app has
+            // the CPU to itself, but in the background Android gives it a smaller share, and spinning
+            // threads then burn that share waiting instead of working.
+            addConfigEntry("session.intra_op.allow_spinning", "0")
+            addConfigEntry("session.inter_op.allow_spinning", "0")
         }
         val session = env.createSession(path, opts)
         val handle = sessions.size + 1

@@ -23,6 +23,16 @@ _ready = False
 _lock = threading.Lock()
 _geometry: dict = {}
 _model_paths: list = []
+_progress = {"fn": None}
+
+
+def _report(fraction: float, text: str) -> None:
+    fn = _progress["fn"]
+    if fn is not None:
+        try:
+            fn(fraction, text)
+        except Exception:
+            pass
 
 SEGNET = "segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.onnx"
 ENCODER = "encoder_pytorch_model_396-f6feedb42ff90087d898b0941a55d040fa6b2903.onnx"
@@ -120,9 +130,26 @@ def setup(bridge, models_dir: str) -> None:
         def parse_staffs(debug, staffs, image, config, selected_staff=-1):
             _geometry["staffs"] = staffs
             _geometry["width"] = int(image.shape[1])
+            _geometry["total"] = max(1, sum(len(s.staffs) for s in staffs))
+            _geometry["done"] = 0
+            _report(0.45, f"Reading staff 1 of {_geometry['total']}")
             return orig_parse(debug, staffs, image, config, selected_staff)
 
         hm.parse_staffs = parse_staffs
+
+        # progress per staff (the slow part): "Reading staff 3 of 10"
+        import homr.staff_parsing as sp
+        orig_staff = sp.parse_staff_image
+
+        def parse_staff_image(*args, **kwargs):
+            out = orig_staff(*args, **kwargs)
+            _geometry["done"] = _geometry.get("done", 0) + 1
+            n, total = _geometry["done"], _geometry.get("total", 1)
+            if n < total:
+                _report(0.45 + 0.5 * n / total, f"Reading staff {n + 1} of {total}")
+            return out
+
+        sp.parse_staff_image = parse_staff_image
         _ready = True
 
 
@@ -141,7 +168,7 @@ def preload() -> None:
     enc.run(None, {enc.get_inputs()[0].name: np.zeros((1, 1, 256, 1280), np.float32)})
 
 
-def scan_page(png_path: str, ocr=None) -> str:
+def scan_page(png_path: str, ocr=None, progress=None) -> str:
     """Recognise one page image. Returns the MusicXML path.
 
     ocr(png_path) -> list of lyrics.Word, if given, adds lyrics, chord symbols and tempo."""
@@ -165,7 +192,12 @@ def scan_page(png_path: str, ocr=None) -> str:
         reader.start()
     with _lock:  # one scan at a time: the models are big
         _geometry.clear()
-        process_image(png_path, config, XmlGeneratorArguments(False, None, None))
+        _progress["fn"] = progress
+        _report(0.0, "Finding the staves")
+        try:
+            process_image(png_path, config, XmlGeneratorArguments(False, None, None))
+        finally:
+            _progress["fn"] = None
         xml = os.path.splitext(png_path)[0] + ".musicxml"
         if not os.path.exists(xml):
             raise RuntimeError("No music found on this page")

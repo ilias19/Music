@@ -743,6 +743,24 @@ def android_specific(app: App):
     time.sleep(3)
     app.reattach()
     s = app.wait_card("background scan", timeout=60)
+    fg = next((x for x in app.page.evaluate("api('/api/scores')") if x["title"] == "lead sheet"), None)
+    fg_s = (fg or {}).get("info", {}).get("scan_seconds")
+
+    # the same lead sheet again, this time with the app in the background the whole time
+    app.upload("lead_sheet.jpg", title="lead bg")
+    time.sleep(1)
+    adb("shell", "input", "keyevent", "3")
+    t0, bg_s = time.time(), None
+    while time.time() - t0 < 400 and bg_s is None:
+        time.sleep(5)
+        m = re.search(r"lead bg.{0,400}?read in (?:(\d+) min )?(\d+) s", adb("shell", "dumpsys", "notification", "--noredact"), re.S)
+        if m:
+            bg_s = int(m.group(1) or 0) * 60 + int(m.group(2))
+    check("background scan is about as fast as in the app", bg_s is not None and fg_s and bg_s <= fg_s * 1.5 + 5,
+          f"in the app {fg_s} s, in the background {bg_s} s")
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    time.sleep(3)
+    app.reattach()
     check("the background scan is ready in the library", s["status"] == "ready" and s["info"]["measures"] == 8, str(s.get("info")))
     adb("shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", f"practiceroom://open/#/score/{s['id']}",
         "-n", f"{PKG}/.MainActivity")
