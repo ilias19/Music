@@ -97,14 +97,19 @@ class MainActivity : ComponentActivity() {
     private fun startBackend(selfTest: Boolean) {
         try {
             val files = AppFiles(this)
-            files.install { msg -> runOnUiThread { status.text = msg } }
-            if (!Python.isStarted()) Python.start(AndroidPlatform(this))
             val token = UUID.randomUUID().toString()
-            val server = Python.getInstance().getModule("server")
-            val port = server.callAttr(
-                "start", files.data.path, files.www.path, files.gallery.path, files.models.path,
-                OrtBridge(), PlatformBridge(), token,
-            ).toInt()
+            // One backend per process, even if the activity is created twice while starting.
+            val port: Int
+            val server: com.chaquo.python.PyObject
+            synchronized(startLock) {
+                files.install { msg -> runOnUiThread { status.text = msg } }
+                if (!Python.isStarted()) Python.start(AndroidPlatform(applicationContext))
+                server = Python.getInstance().getModule("server")
+                port = server.callAttr(
+                    "start", files.data.path, files.www.path, files.gallery.path, files.models.path,
+                    bridge, PlatformBridge(), token,
+                ).toInt()
+            }
             origin = "http://127.0.0.1:$port"
             Log.i(TAG, "Backend listening on $origin")
             runOnUiThread {
@@ -238,6 +243,8 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        private val startLock = Any()
+        private val bridge by lazy { OrtBridge() }
         private const val TAG = "PracticeRoom"
         private const val SELFTEST = "PR_SELFTEST"
     }

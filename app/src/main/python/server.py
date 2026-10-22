@@ -421,7 +421,7 @@ class Handler(BaseHTTPRequestHandler):
     # --- helpers ---
     def _authorised(self) -> bool:
         c = cookies.SimpleCookie(self.headers.get("Cookie", ""))
-        return "pr" in c and c["pr"].value == S["token"]
+        return "pr" in c and c["pr"].value in S["tokens"]
 
     def _send(self, status: int, body: bytes, ctype: str, extra: dict | None = None) -> None:
         self.send_response(status)
@@ -478,10 +478,10 @@ class Handler(BaseHTTPRequestHandler):
         params = {k: v[0] for k, v in parse_qs(url.query).items()}
         try:
             if path == "/__start":  # the app opens this once with the launch secret
-                if params.get("k") != S["token"]:
+                if params.get("k") not in S["tokens"]:
                     raise HTTPError(403, "Forbidden")
                 self._send(302, b"", "text/plain", {
-                    "Location": "/", "Set-Cookie": f"pr={S['token']}; Path=/; HttpOnly; SameSite=Strict"})
+                    "Location": "/", "Set-Cookie": f"pr={params['k']}; Path=/; HttpOnly; SameSite=Strict"})
                 return
             if not self._authorised():
                 raise HTTPError(403, "Open Practice Room from the app")
@@ -597,13 +597,21 @@ def start(data_dir, www_dir, gallery_dir, models_dir, bridge, platform, token, p
 
     Safe to call again (e.g. the activity was recreated): the running server is
     reused and only the launch secret changes."""
-    if S.get("httpd"):
-        S["token"] = str(token)
-        return S["httpd"].server_address[1]
+    with _start_lock:
+        if S.get("httpd"):
+            S["tokens"].add(str(token))
+            return S["httpd"].server_address[1]
+        return _start(data_dir, www_dir, gallery_dir, models_dir, bridge, platform, token, port)
+
+
+_start_lock = threading.Lock()
+
+
+def _start(data_dir, www_dir, gallery_dir, models_dir, bridge, platform, token, port) -> int:
     data = Path(str(data_dir))
     S.update(data=data, scores=data / "scores", db=str(data / "practice.db"), www=Path(str(www_dir)),
              gallery=Path(str(gallery_dir)), models=Path(str(models_dir)), bridge=bridge,
-             platform=platform, token=str(token))
+             platform=platform, tokens={str(token)})
     S["scores"].mkdir(parents=True, exist_ok=True)
     init_db()
     seed_gallery()
