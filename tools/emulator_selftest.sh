@@ -16,7 +16,7 @@ adb shell am start -n "$PKG/.MainActivity" --ez selftest true
 verdict=""
 for i in $(seq 1 200); do
   sleep 5
-  lines=$(adb logcat -d -s PR_SELFTEST:I PR_SELFTEST:E)
+  lines=$(adb logcat -d -s PR_SELFTEST:I)
   if echo "$lines" | grep -q "PASS"; then verdict=PASS; break; fi
   if echo "$lines" | grep -q "FAIL"; then verdict=FAIL; break; fi
 done
@@ -25,7 +25,7 @@ sleep 3
 adb exec-out screencap -p > "$OUT/screen.png" || true
 adb logcat -d > "$OUT/logcat.txt"
 echo "----- self-test -----"
-adb logcat -d -s PR_SELFTEST:I PR_SELFTEST:E
+adb logcat -d -s PR_SELFTEST:I
 echo "----- app log (tail) -----"
 grep -E "PracticeRoom|python\.std|AndroidRuntime|chaquopy|onnxruntime" "$OUT/logcat.txt" | tail -150
 
