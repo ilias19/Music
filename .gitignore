@@ -1,0 +1,16 @@
+# Build output
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+__pycache__/
+
+# Downloaded by tools/fetch_assets.sh (too big for git)
+app/src/main/assets/models/
+app/src/main/assets/www/samples/
+
+# Signing keys never go in the repo
+*.jks
+*.keystore

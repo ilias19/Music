@@ -1,0 +1,27 @@
+[
+  {
+    "file": "ode_to_joy.musicxml",
+    "title": "Ode to Joy (Beethoven)",
+    "level": "Beginner"
+  },
+  {
+    "file": "bach_bwv66_6.musicxml",
+    "title": "Chorale BWV 66.6 (Bach)",
+    "level": "Intermediate"
+  },
+  {
+    "file": "lascia_chio_pianga.musicxml",
+    "title": "Lascia ch'io pianga (Handel)",
+    "level": "Intermediate"
+  },
+  {
+    "file": "der_lindenbaum.musicxml",
+    "title": "Der Lindenbaum (Schubert)",
+    "level": "Intermediate"
+  },
+  {
+    "file": "maple_leaf_rag.musicxml",
+    "title": "Maple Leaf Rag (Joplin)",
+    "level": "Advanced"
+  }
+]

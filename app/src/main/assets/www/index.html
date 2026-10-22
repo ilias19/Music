@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Practice Room</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231f2a44'/><path d='M12 22a3 3 0 1 1-2-2.8V8l12-3v12a3 3 0 1 1-2-2.8V8.6l-8 2V22z' fill='%23f4efe6'/></svg>">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================== LIBRARY ============================== -->
+<main id="library" class="view">
+  <header class="lib-head">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M12 22a3 3 0 1 1-2-2.8V8l12-3v12a3 3 0 1 1-2-2.8V8.6l-8 2V22z"/></svg>
+      </span>
+      <h1>Practice Room</h1>
+    </div>
+    <div class="stats" id="stats" aria-label="Practice time">
+      <div class="stat"><span class="stat-num" id="stat-today">0m</span><span class="stat-lbl">today</span></div>
+      <div class="stat"><span class="stat-num" id="stat-week">0m</span><span class="stat-lbl">this week</span></div>
+      <div class="stat"><span class="stat-num" id="stat-streak">0</span><span class="stat-lbl">day streak</span></div>
+      <div class="spark" id="spark" title="Last 14 days"></div>
+    </div>
+  </header>
+
+  <section class="drop" id="drop" tabindex="0">
+    <div class="drop-inner">
+      <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 6h20l8 8v28H10z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 22h18M15 27h18M15 32h18M15 37h18" stroke="currentColor" stroke-width="1.6" opacity=".55"/><path d="M30 6v8h8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
+      <p class="drop-title" id="drop-title">Drop sheet music here</p>
+      <p class="drop-sub">Photos, scans or PDFs are read automatically. MusicXML files open as-is.<br>Several images at once become one score, in order.</p>
+      <div class="drop-actions">
+        <label class="btn primary"><input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.musicxml,.xml,.mxl,image/*,application/pdf" hidden>Choose files</label>
+        <label class="btn"><input type="file" id="camera-input" accept="image/*" capture="environment" hidden>Take a photo</label>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Library</h2>
+      <input type="search" id="search" placeholder="Search" aria-label="Search scores">
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<!-- ============================== PLAYER =============================== -->
+<main id="player" class="view" hidden>
+  <header class="top">
+    <button class="icon-btn" id="back" aria-label="Back to library" title="Library">
+      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="title-wrap">
+      <h1 id="score-title" contenteditable="true" spellcheck="false"></h1>
+      <div class="meta" id="score-meta"></div>
+    </div>
+    <div class="top-right">
+      <span class="timer" id="timer" title="Practice time this session">0:00</span>
+      <button class="btn small" id="compare-btn" hidden>Original scan</button>
+      <div class="menu-wrap">
+        <button class="btn small" id="export-btn" aria-haspopup="true">Export</button>
+        <div class="menu" id="export-menu" hidden>
+          <button data-fmt="pdf">PDF</button>
+          <button data-fmt="midi">MIDI</button>
+          <button data-fmt="musicxml">MusicXML</button>
+          <p class="menu-note">Exports use the current transposition and tempo.</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="side-btn" aria-label="Parts and recordings" title="Parts &amp; recordings">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="paper-scroll" id="paper-scroll">
+      <div class="paper" id="paper">
+        <div class="loop-layer" id="loop-layer"></div>
+        <div id="osmd"></div>
+      </div>
+      <div class="loading" id="loading">Loading score…</div>
+    </div>
+
+    <aside class="side" id="side" hidden>
+      <div class="side-block">
+        <h3>Parts</h3>
+        <div id="parts"></div>
+      </div>
+      <div class="side-block">
+        <h3>Recordings</h3>
+        <div id="recordings"><p class="muted">Record yourself with the ● button.</p></div>
+      </div>
+      <div class="side-block">
+        <h3>Display</h3>
+        <label class="row-lbl">Zoom <input type="range" id="zoom" min="0.5" max="1.6" step="0.05" value="1"></label>
+      </div>
+    </aside>
+
+    <aside class="compare" id="compare" hidden>
+      <div class="compare-head"><h3>Original scan</h3><button class="icon-btn" id="compare-close" aria-label="Close">✕</button></div>
+      <p class="muted small">Check notes against the page. Recognition can miss notes, especially in dense or handwritten music.</p>
+      <div id="compare-pages"></div>
+    </aside>
+  </div>
+
+  <footer class="transport">
+    <div class="t-group">
+      <button class="play" id="play" aria-label="Play" title="Play / pause (Space)">
+        <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+      </button>
+      <button class="icon-btn" id="stop" aria-label="Back to start" title="Back to start (Home)">
+        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12L18 6v12z"/></svg>
+      </button>
+      <button class="rec" id="rec" aria-label="Record" title="Record yourself"><span></span></button>
+      <span class="pos" id="pos">Bar 1</span>
+    </div>
+
+    <div class="t-group">
+      <label class="ctl" title="Tempo">
+        <span class="ctl-lbl">Tempo</span>
+        <input type="range" id="tempo" min="30" max="220" value="100">
+        <output id="tempo-out">100</output>
+      </label>
+      <div class="ctl" title="Transpose (semitones)">
+        <span class="ctl-lbl">Key</span>
+        <button class="step" id="tr-down" aria-label="Transpose down">−</button>
+        <output id="tr-out">0</output>
+        <button class="step" id="tr-up" aria-label="Transpose up">+</button>
+      </div>
+    </div>
+
+    <div class="t-group">
+      <button class="toggle" id="loop-btn" aria-pressed="false" title="Loop bars (click a bar, shift-click another)">
+        Loop <span id="loop-range">off</span>
+      </button>
+      <button class="toggle" id="metro-btn" aria-pressed="false" title="Metronome">Metronome</button>
+      <button class="toggle" id="countin-btn" aria-pressed="true" title="One bar count-in before playing">Count-in</button>
+    </div>
+  </footer>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="vendor/opensheetmusicdisplay.min.js"></script>
+<script src="vendor/tone.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/svg2pdf.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
