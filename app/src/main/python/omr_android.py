@@ -3,8 +3,9 @@
 Call `setup(bridge, models_dir)` once, then `scan_page(png_path)` per page.
 It returns the path of the MusicXML homr wrote next to the image.
 
-Three things adapt homr 0.7 to Chaquopy's Python 3.10 / OpenCV 4.5 stack:
+Four things adapt homr 0.7 to Chaquopy's Python 3.10 / OpenCV 4.5.1 stack:
   * cv2.typing doesn't exist before OpenCV 4.8 (homr only uses it in type hints)
+  * OpenCV 4.5.1 rejects numpy arrays as sizes (cv2.resize(img, np.array([w, h])))
   * title OCR (rapidocr) isn't shipped: the user names scores themselves
   * onnxruntime is replaced by ort_shim, backed by the native Android runtime
 """
@@ -26,7 +27,37 @@ ENCODER = "encoder_pytorch_model_396-f6feedb42ff90087d898b0941a55d040fa6b2903.on
 DECODER = "decoder_pytorch_model_396-f6feedb42ff90087d898b0941a55d040fa6b2903.onnx"
 
 
+def _as_size(v):
+    """OpenCV < 4.5.5 only accepts a plain tuple of ints as a size (homr passes numpy arrays)."""
+    if hasattr(v, "tolist") or isinstance(v, list):
+        v = v.tolist() if hasattr(v, "tolist") else v
+        return tuple(int(x) for x in v)
+    return v
+
+
+def _wrap_dsize(name: str, position: int) -> None:
+    orig = getattr(cv2, name)
+    if getattr(orig, "_pr_wrapped", False):
+        return
+
+    def wrapper(*args, **kwargs):
+        if len(args) > position:
+            args = list(args)
+            args[position] = _as_size(args[position])
+        if "dsize" in kwargs:
+            kwargs["dsize"] = _as_size(kwargs["dsize"])
+        return orig(*args, **kwargs)
+
+    wrapper._pr_wrapped = True
+    setattr(cv2, name, wrapper)
+
+
 def _compat() -> None:
+    # Chaquopy ships OpenCV 4.5.1: sizes must be tuples, not numpy arrays
+    _wrap_dsize("resize", 1)
+    _wrap_dsize("warpAffine", 2)
+    _wrap_dsize("warpPerspective", 2)
+
     if "cv2.typing" not in sys.modules:
         stub = types.ModuleType("cv2.typing")
         stub.__getattr__ = lambda name: object
