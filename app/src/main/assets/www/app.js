@@ -344,6 +344,37 @@ function fitTitle(o, box) {
   }
 }
 
+// VexFlow sometimes computes a negative width for a short line (e.g. a 1st/2nd-ending
+// bracket squeezed on a phone); browsers reject that with console errors. Clamp it to 0
+// by patching the shared SVG drawing context once, using a tiny off-screen render.
+let rectGuardDone = false;
+async function installRectGuard() {
+  if (rectGuardDone) return;
+  rectGuardDone = true;
+  const holder = Object.assign(document.createElement("div"), { className: "pdf-render" });
+  document.body.appendChild(holder);
+  try {
+    const o = new opensheetmusicdisplay.OpenSheetMusicDisplay(holder, { autoResize: false, backend: "svg", drawTitle: false });
+    await o.load(`<?xml version="1.0" encoding="UTF-8"?><score-partwise version="3.1"><part-list><score-part id="P1"><part-name></part-name></score-part></part-list>
+      <part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time>
+      <clef><sign>G</sign><line>2</line></clef></attributes><note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><type>whole</type></note></measure></part></score-partwise>`);
+    o.render();
+    const ctx = o.Drawer?.Backends?.[0]?.getContext?.();
+    const proto = ctx && Object.getPrototypeOf(ctx);
+    for (const name of ["rect", "fillRect"]) {
+      const orig = proto?.[name];
+      if (typeof orig !== "function") continue;
+      proto[name] = function (x, y, w, h, ...rest) {
+        return orig.call(this, x, y, w < 0 ? 0 : w, h < 0 ? 0 : h, ...rest);
+      };
+    }
+  } catch (e) {
+    console.warn("rect guard not installed", e);
+  } finally {
+    holder.remove();
+  }
+}
+
 // ================================================================ PLAYER ==
 const Player = (() => {
   let osmd = null, sid = null, meta = null;
@@ -387,6 +418,7 @@ const Player = (() => {
   }
 
   async function loadXml(first = false) {
+    await installRectGuard();
     const xml = await api(`/api/scores/${sid}/musicxml?semitones=${semitones}`);
     if (!osmd) {
       watchWidth();
