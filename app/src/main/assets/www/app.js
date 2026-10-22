@@ -226,39 +226,66 @@ const Sound = (() => {
     });
   }
 
-  function voiceFor(part) {
-    if (!voices.has(part)) {
+  // One channel per mixer track: instrument -> volume -> master.
+  const INSTRUMENTS = {
+    piano: "Piano",
+    soft: "Soft synth",
+    organ: "Organ",
+    bass: "Bass",
+  };
+
+  function makeInstrument(kind) {
+    if (kind === "piano") return buffers ? new Tone.Sampler({ urls: buffers, release: 1 }) : makeSynth();
+    if (kind === "organ") return new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "fatsine4", count: 3, spread: 18 },
+      envelope: { attack: 0.02, decay: 0.1, sustain: 0.9, release: 0.25 }, volume: -16 });
+    if (kind === "bass") return new Tone.PolySynth(Tone.FMSynth, {
+      harmonicity: 1, modulationIndex: 3, envelope: { attack: 0.005, decay: 0.4, sustain: 0.4, release: 0.6 },
+      volume: -10 });
+    return makeSynth();
+  }
+
+  function channel(track) {
+    if (!voices.has(track)) {
       const vol = new Tone.Volume(0).connect(master);
-      const inst = buffers ? new Tone.Sampler({ urls: buffers, release: 1 }) : makeSynth();
+      const kind = "piano";
+      const inst = makeInstrument(kind);
       inst.connect(vol);
-      voices.set(part, { inst, vol, sampled: !!buffers });
+      voices.set(track, { inst, vol, kind, sampled: kind === "piano" && !!buffers });
     }
-    return voices.get(part);
+    return voices.get(track);
   }
 
   function rebuildVoices() {
-    for (const [part, v] of voices) {
-      if (v.sampled || !buffers) continue;
-      const inst = new Tone.Sampler({ urls: buffers, release: 1 });
+    for (const v of voices.values()) {
+      if (v.kind !== "piano" || v.sampled || !buffers) continue;
+      const inst = makeInstrument("piano");
       inst.connect(v.vol);
       v.inst.dispose();
       v.inst = inst; v.sampled = true;
-      voices.set(part, v);
     }
   }
 
-  function note(part, midi, durSec, time, vel = 0.75) {
-    const v = voiceFor(part);
+  function note(track, midi, durSec, time, vel = 0.75) {
+    const v = channel(track);
     if (v.vol.mute) return;
     v.inst.triggerAttackRelease(Tone.Frequency(midi, "midi").toFrequency(), Math.max(0.05, durSec), time, vel);
   }
 
   function click(time, accent) { (accent ? metroAccent : metro).triggerAttackRelease(accent ? "C6" : "G5", 0.03, time); }
 
-  function setPart(part, { mute, db }) {
-    const v = voiceFor(part);
+  function setTrack(track, { mute, db, instrument }) {
+    const v = channel(track);
     if (mute !== undefined) v.vol.mute = mute;
     if (db !== undefined) v.vol.volume.value = db;
+    if (instrument && instrument !== v.kind) {
+      v.inst.releaseAll?.();
+      v.inst.dispose();
+      v.inst = makeInstrument(instrument);
+      v.inst.connect(v.vol);
+      v.kind = instrument;
+      v.sampled = instrument === "piano" && !!buffers;
+    }
   }
 
   function silence() {
@@ -271,7 +298,7 @@ const Sound = (() => {
     master.gain.setValueAtTime(1, now + 0.3);
   }
 
-  return { init, note, click, setPart, silence, get ready() { return !!master; }, get loading() { return loading; } };
+  return { init, note, click, setTrack, silence, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; } };
 })();
 
 // ================================================================ PLAYER ==
@@ -283,7 +310,9 @@ const Player = (() => {
   let semitones = 0, bpm = 100, scoreBpm = 100;
   let loop = { on: false, a: null, b: null };
   let metroOn = false, countIn = true;
-  let partState = [];      // [{ name, mute, db }]
+  // Mixer: one track per part / voice, with chords split into melody (top note) and harmony.
+  let tracks = [];          // [{ key, name, count, mute, solo, db, instrument, hidden, notes:[Note] }]
+  let trackState = {};      // key -> saved settings, survives transposition
 
   // transport state
   let playing = false, posQ = 0;
@@ -297,7 +326,7 @@ const Player = (() => {
 
   // ---------------------------------------------------------- loading --
   async function open(id) {
-    if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; partState = []; playIntro = false; }
+    if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; tracks = []; trackState = {}; playIntro = false; }
     sid = id;
     $("#loading").hidden = false;
     $("#loading").textContent = "Loading score…";
@@ -326,17 +355,19 @@ const Player = (() => {
     osmd.zoom = parseFloat($("#zoom").value);
     osmd.render();
     buildTimeline();
+    if (applyHidden()) osmd.render();
     if (first) {
       scoreBpm = Math.round(osmd.Sheet.DefaultStartTempoInBpm || meta.info?.tempo || 100);
       setTempo(scoreBpm);
-      buildPartsPanel();
     }
+    renderMixer();
     afterRender();
     $("#loading").hidden = true;
   }
 
   function afterRender() {
     if (!osmd) return;
+    hideOrphanBeams();
     osmd.cursor.show();
     curIdx = -1;
     showPosition(posQ, true);
@@ -353,6 +384,19 @@ const Player = (() => {
     cursor.reset();
     const it = cursor.Iterator.clone();
     steps = [];
+    tracks = [];
+    const byKey = new Map();
+    function trackFor(part, voice, role) {
+      const key = `${part}|${voice}|${role}`;
+      if (!byKey.has(key)) {
+        const saved = trackState[key] || {};
+        const t = { key, part, voice, role, count: 0, notes: [],
+          mute: !!saved.mute, solo: !!saved.solo, db: saved.db ?? 0,
+          instrument: saved.instrument || "piano", hidden: !!saved.hidden };
+        byKey.set(key, t); tracks.push(t);
+      }
+      return byKey.get(key);
+    }
     let clock = 0, prevTs = null, prevMin = 1;
     while (!it.EndReached) {
       const ts = it.currentTimeStamp.RealValue * 4;
@@ -362,14 +406,22 @@ const Player = (() => {
       let minLen = Infinity;
       for (const ve of it.CurrentVoiceEntries) {
         const part = Math.max(0, insts.indexOf(ve.ParentVoice.Parent));
+        const voice = ve.ParentVoice.VoiceId ?? 1;
+        const pitched = ve.Notes.filter((n) => !n.isRest() && n.halfTone !== undefined);
+        const top = pitched.length > 1 ? Math.max(...pitched.map((n) => n.halfTone)) : null;
         for (const n of ve.Notes) {
           const len = n.Length.RealValue * 4;
           if (len > 0) minLen = Math.min(minLen, len);
-          if (n.isRest() || n.IsGraceNote || n.halfTone === undefined) continue;
+          if (n.isRest() || n.halfTone === undefined) continue;
+          const role = top !== null && n.halfTone !== top ? "harmony" : "melody";
+          const t = trackFor(part, voice, role);
+          t.notes.push(n);
+          if (n.IsGraceNote) continue;
           const tie = n.NoteTie;
           if (tie && tie.StartNote !== n) continue;
+          t.count++;
           const dur = (tie ? tie.Duration.RealValue : n.Length.RealValue) * 4;
-          notes.push({ part, midi: n.halfTone + 12, dur });
+          notes.push({ track: t.key, midi: n.halfTone + 12, dur });
         }
       }
       prevMin = isFinite(minLen) ? minLen : 1;
@@ -394,19 +446,112 @@ const Player = (() => {
     const introBar = firstSound ? firstSound.measure : 0;
     introEndQ = measures[introBar]?.start ?? 0;
     introBars = introBar;
+    nameTracks(insts);
+    // notes refer to tracks by key; turn that into the track's index for the audio engine
+    const idx = new Map(tracks.map((t, i) => [t.key, i]));
+    for (const st of steps) for (const n of st.notes) n.track = idx.get(n.track);
     cursor.reset();
   }
 
-  function buildPartsPanel() {
-    const insts = osmd.Sheet.Instruments;
-    if (partState.length !== insts.length) partState = insts.map((inst, i) => ({ name: inst.Name || `Part ${i + 1}`, mute: false, db: 0 }));
-    $("#parts").innerHTML = partState.map((p, i) => `
-      <div class="part-row">
-        <button class="mute" data-part="${i}" aria-pressed="${p.mute}" title="Mute">M</button>
-        <span class="name" title="${esc(p.name)}">${esc(p.name)}</span>
-        <input type="range" min="-30" max="6" step="1" value="${p.db}" data-vol="${i}" aria-label="Volume ${esc(p.name)}">
-      </div>`).join("") || `<p class="muted">No parts.</p>`;
-    partState.forEach((p, i) => Sound.ready && Sound.setPart(i, p));
+  function nameTracks(insts) {
+    tracks = tracks.filter((t) => t.count > 0);
+    tracks.sort((a, b) => a.part - b.part || a.voice - b.voice || (a.role === "melody" ? -1 : 1));
+    const parts = new Set(tracks.map((t) => t.part));
+    for (const t of tracks) {
+      const sameVoice = tracks.filter((u) => u.part === t.part && u.voice === t.voice);
+      const voices = new Set(tracks.filter((u) => u.part === t.part).map((u) => u.voice));
+      const bits = [];
+      if (parts.size > 1) bits.push(insts[t.part]?.Name || `Part ${t.part + 1}`);
+      if (voices.size > 1) bits.push(`Voice ${t.voice}`);
+      if (sameVoice.length > 1) bits.push(t.role === "melody" ? "Melody" : "Harmony");
+      t.name = bits.join(" · ") || "Melody";
+    }
+  }
+
+  // Mark the notes of hidden tracks invisible. Returns true if anything is hidden (needs a re-render).
+  function applyHidden() {
+    let any = false;
+    for (const t of tracks) {
+      for (const n of t.notes) n.PrintObject = !t.hidden;
+      any = any || t.hidden;
+    }
+    return any;
+  }
+
+  // Invisible notes still get their beams drawn: hide every beam whose notes are all hidden.
+  function hideOrphanBeams() {
+    if (!tracks.some((t) => t.hidden)) return;
+    const hidden = new Set();
+    for (const list of osmd.GraphicSheet.MeasureList) for (const gm of list || []) {
+      if (!gm) continue;
+      for (const se of gm.staffEntries) for (const gve of se.graphicalVoiceEntries) for (const gn of gve.notes) {
+        if (gn.sourceNote && gn.sourceNote.PrintObject === false && gn.vfnote) hidden.add(gn.vfnote[0]);
+      }
+    }
+    for (const list of osmd.GraphicSheet.MeasureList) for (const gm of list || []) {
+      if (!gm) continue;
+      for (const group of [gm.vfbeams, gm.autoVfBeams]) {
+        if (!group) continue;
+        for (const beams of Object.values(group)) for (const beam of beams || []) {
+          if (beam?.notes?.length && beam.notes.every((n) => hidden.has(n))) {
+            // OSMD names a beam's SVG group after its first note: vf-<note id>-beam<n>
+            const first = beam.notes[0]?.attrs?.id;
+            if (first) document.querySelectorAll(`#osmd [id^="vf-${first}-beam"]`).forEach((el) => (el.style.display = "none"));
+          }
+        }
+      }
+    }
+  }
+
+  function saveTrack(t) {
+    trackState[t.key] = { mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden };
+  }
+
+  // Effective audibility: solo wins over mute.
+  function syncSound() {
+    if (!Sound.ready) return;
+    const anySolo = tracks.some((t) => t.solo);
+    tracks.forEach((t, i) => Sound.setTrack(i, {
+      mute: anySolo ? !t.solo : t.mute, db: t.db, instrument: t.instrument }));
+  }
+
+  function renderMixer() {
+    const anyHidden = tracks.some((t) => t.hidden);
+    $("#mixer-hide-all").textContent = anyHidden ? "Show all notes" : "Hide all notes";
+    $("#mixer-tracks").innerHTML = tracks.map((t, i) => `
+      <div class="track ${t.solo ? "soloed" : ""}" data-track="${i}">
+        <label class="track-show" title="Show this track's notes on the score">
+          <input type="checkbox" data-act="show" ${t.hidden ? "" : "checked"}>
+          <span>Notes</span>
+        </label>
+        <div class="track-main">
+          <div class="track-head">
+            <span class="track-name">${esc(t.name)}</span>
+            <span class="track-count">${t.count} notes</span>
+            <select data-act="instrument" aria-label="Instrument for ${esc(t.name)}">
+              ${Object.entries(Sound.INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${k === t.instrument ? "selected" : ""}>${v}</option>`).join("")}
+            </select>
+          </div>
+          <div class="track-vol">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/></svg>
+            <input type="range" min="-30" max="6" step="1" value="${t.db}" data-act="vol" aria-label="Volume ${esc(t.name)}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM13 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+          </div>
+        </div>
+        <div class="track-btns">
+          <button data-act="solo" aria-pressed="${t.solo}">Solo</button>
+          <button data-act="mute" aria-pressed="${t.mute}">Mute</button>
+        </div>
+      </div>`).join("") || `<p class="muted">This score has no notes to mix.</p>`;
+    $("#mixer-btn").classList.toggle("has-changes", tracks.some((t) => t.mute || t.solo || t.hidden || t.db !== 0 || t.instrument !== "piano"));
+  }
+
+  async function setHidden(list, hidden) {
+    list.forEach((t) => { t.hidden = hidden; saveTrack(t); });
+    applyHidden();
+    osmd.render();
+    afterRender();
+    renderMixer();
   }
 
   // ------------------------------------------------------ geometry --
@@ -505,7 +650,7 @@ const Player = (() => {
   async function play() {
     if (!steps.length) return;
     await Sound.init();
-    partState.forEach((p, i) => Sound.setPart(i, p));
+    syncSound();
     if (loop.on && (posQ < loopStart() || posQ >= loopEnd())) posQ = loopStart();
     if (posQ >= totalQ - 1e-6) posQ = 0;
     if (!loop.on && !playIntro && introBars > 0 && posQ < introEndQ - 1e-6) {
@@ -556,7 +701,7 @@ const Player = (() => {
         for (let i = stepIndexAt(schedQ); i < steps.length && steps[i].q < upto; i++) {
           const s = steps[i];
           if (s.q < schedQ - 1e-6) continue;
-          for (const n of s.notes) Sound.note(n.part, n.midi, (n.dur * 60) / bpm * 0.97, tAt(s.q));
+          for (const n of s.notes) Sound.note(n.track, n.midi, (n.dur * 60) / bpm * 0.97, tAt(s.q));
         }
         // metronome
         if (metroOn) {
@@ -751,7 +896,8 @@ const Player = (() => {
     if (rec) rec.stop();
     flush();
     clearInterval(tick);
-    $("#side").hidden = true; $("#compare").hidden = true;
+    $("#side").hidden = true; $("#compare").hidden = true; $("#mixer").hidden = true;
+    $("#mixer-btn").setAttribute("aria-pressed", "false");
   }
 
   function updateMeta() {
@@ -780,16 +926,32 @@ const Player = (() => {
   $("#back").addEventListener("click", () => (location.hash = "#/"));
   $("#side-btn").addEventListener("click", () => { $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true; });
   $("#zoom").addEventListener("change", (e) => { osmd.zoom = +e.target.value; osmd.render(); afterRender(); });
-  $("#parts").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-part]"); if (!b) return;
-    const i = +b.dataset.part; partState[i].mute = !partState[i].mute;
-    b.setAttribute("aria-pressed", String(partState[i].mute));
-    if (Sound.ready) Sound.setPart(i, { mute: partState[i].mute });
+  $("#mixer-btn").addEventListener("click", () => {
+    const m = $("#mixer"); m.hidden = !m.hidden;
+    $("#mixer-btn").setAttribute("aria-pressed", String(!m.hidden));
   });
-  $("#parts").addEventListener("input", (e) => {
-    const i = e.target.dataset.vol; if (i === undefined) return;
-    partState[i].db = +e.target.value;
-    if (Sound.ready) Sound.setPart(+i, { db: partState[i].db });
+  $("#mixer-close").addEventListener("click", () => { $("#mixer").hidden = true; $("#mixer-btn").setAttribute("aria-pressed", "false"); });
+  $("#mixer-hide-all").addEventListener("click", () => {
+    const anyHidden = tracks.some((t) => t.hidden);
+    setHidden(tracks, !anyHidden);
+  });
+  $("#mixer-tracks").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-act]"); if (!b) return;
+    const t = tracks[+b.closest("[data-track]").dataset.track];
+    if (b.dataset.act === "solo") t.solo = !t.solo;
+    if (b.dataset.act === "mute") t.mute = !t.mute;
+    saveTrack(t); syncSound(); renderMixer();
+  });
+  $("#mixer-tracks").addEventListener("input", (e) => {
+    const el = e.target; const row = el.closest("[data-track]"); if (!row) return;
+    const t = tracks[+row.dataset.track];
+    if (el.dataset.act === "vol") { t.db = +el.value; saveTrack(t); syncSound(); }
+  });
+  $("#mixer-tracks").addEventListener("change", (e) => {
+    const el = e.target; const row = el.closest("[data-track]"); if (!row) return;
+    const t = tracks[+row.dataset.track];
+    if (el.dataset.act === "instrument") { t.instrument = el.value; saveTrack(t); syncSound(); renderMixer(); }
+    if (el.dataset.act === "show") setHidden([t], !el.checked);
   });
   $("#recordings").addEventListener("click", async (e) => {
     const b = e.target.closest("[data-delrec]"); if (!b) return;
@@ -888,7 +1050,8 @@ const Player = (() => {
   }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(true); });
 
-  return { open, close, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ }; } };
+  return { open, close, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ,
+    tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden })) }; } };
 })();
 
 async function openPlayer(id) {

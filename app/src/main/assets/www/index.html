@@ -70,7 +70,7 @@
           <p class="menu-note">Exports use the current transposition and tempo.</p>
         </div>
       </div>
-      <button class="icon-btn" id="side-btn" aria-label="Parts and recordings" title="Parts &amp; recordings">
+      <button class="icon-btn" id="side-btn" aria-label="Recordings and display" title="Recordings &amp; display">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
     </div>
@@ -87,10 +87,6 @@
 
     <aside class="side" id="side" hidden>
       <div class="side-block">
-        <h3>Parts</h3>
-        <div id="parts"></div>
-      </div>
-      <div class="side-block">
         <h3>Recordings</h3>
         <div id="recordings"><p class="muted">Record yourself with the ● button.</p></div>
       </div>
@@ -99,6 +95,17 @@
         <label class="row-lbl">Zoom <input type="range" id="zoom" min="0.5" max="1.6" step="0.05" value="1"></label>
       </div>
     </aside>
+
+    <section class="mixer" id="mixer" hidden aria-label="Mixer">
+      <div class="mixer-head">
+        <button class="link-btn" id="mixer-hide-all">Hide all notes</button>
+        <h3>Mixer</h3>
+        <button class="icon-btn" id="mixer-close" aria-label="Close mixer">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+      <div class="mixer-tracks" id="mixer-tracks"></div>
+    </section>
 
     <aside class="compare" id="compare" hidden>
       <div class="compare-head"><h3>Original scan</h3><button class="icon-btn" id="compare-close" aria-label="Close">✕</button></div>
@@ -140,6 +147,7 @@
       </button>
       <button class="toggle" id="metro-btn" aria-pressed="false" title="Metronome">Metronome</button>
       <button class="toggle" id="countin-btn" aria-pressed="true" title="One bar count-in before playing">Count-in</button>
+      <button class="toggle" id="mixer-btn" aria-pressed="false" title="Mixer: solo, mute, volume, instrument and notes per track">Mixer</button>
     </div>
   </footer>
 </main>
