@@ -75,8 +75,8 @@ jobs:
       - name: Name the APKs
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-arm64-v8a-release.apk "dist/PracticeRoom-0.1.${{ github.run_number }}-phone.apk"
-          cp app/build/outputs/apk/release/app-x86_64-release.apk "dist/PracticeRoom-0.1.${{ github.run_number }}-x86_64.apk"
+          cp app/build/outputs/apk/phone/release/app-phone-release.apk "dist/PracticeRoom-0.1.${{ github.run_number }}-phone.apk"
+          cp app/build/outputs/apk/emu/release/app-emu-release.apk "dist/PracticeRoom-0.1.${{ github.run_number }}-x86_64.apk"
           ls -la dist
 
       - uses: actions/upload-artifact@v4

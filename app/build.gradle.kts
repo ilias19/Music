@@ -18,9 +18,18 @@ android {
         targetSdk = 35
         versionCode = (System.getenv("PR_VERSION_CODE") ?: "1").toInt()
         versionName = System.getenv("PR_VERSION_NAME") ?: "0.1.0-dev"
-        ndk {
-            // arm64 for phones, x86_64 for the CI emulator test
-            abiFilters += listOf("arm64-v8a", "x86_64")
+    }
+
+    // One APK per CPU type (Chaquopy needs ndk.abiFilters, which can't be combined with ABI splits)
+    flavorDimensions += "abi"
+    productFlavors {
+        create("phone") {
+            dimension = "abi"
+            ndk { abiFilters += "arm64-v8a" }
+        }
+        create("emu") {   // the CI emulator test
+            dimension = "abi"
+            ndk { abiFilters += "x86_64" }
         }
     }
 
@@ -40,16 +49,6 @@ android {
             isMinifyEnabled = false
             signingConfig = if (hasReleaseKey) signingConfigs.getByName("release")
                             else signingConfigs.getByName("debug")
-        }
-    }
-
-    // One APK per CPU type keeps the phone download small.
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "x86_64")
-            isUniversalApk = false
         }
     }
 
