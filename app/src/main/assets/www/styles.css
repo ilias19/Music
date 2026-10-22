@@ -243,6 +243,10 @@ input[type=range] { accent-color: var(--accent); }
 .track-btns button[data-act=mute][aria-pressed=true] { background: #c8553d; color: #fff; }
 #mixer-btn.has-changes::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rec); margin-left: 6px; vertical-align: middle; }
 
+/* ---- scan details ---- */
+.scan-log { font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-word;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 0 0 8px; max-height: 280px; overflow: auto; }
+
 /* ---- zoom sheet ---- */
 .zoom-sheet {
   position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 16;

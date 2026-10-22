@@ -27,6 +27,34 @@ class PlatformBridge(private val context: Context) {
     fun scanFinished(id: String, title: String, ok: Boolean, queued: Int, seconds: Int) =
         ScanService.finished(context, id, title, ok, seconds)
 
+    /** A snapshot for the scan details: is the phone hot, short of memory, is the app in front... */
+    fun deviceState(): String {
+        val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        val mem = android.app.ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
+        val freqs = JSONArray()
+        for (i in 0 until Runtime.getRuntime().availableProcessors()) {
+            val cur = runCatching { File("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq").readText().trim().toLong() / 1000 }.getOrNull()
+            val max = runCatching { File("/sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq").readText().trim().toLong() / 1000 }.getOrNull()
+            freqs.put(if (cur != null && max != null) "$cur/$max" else "?")
+        }
+        val rt = Runtime.getRuntime()
+        val native = android.os.Debug.getNativeHeapAllocatedSize() / 1_000_000
+        return JSONObject()
+            .put("phone", "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
+            .put("android", android.os.Build.VERSION.RELEASE)
+            .put("app_in_front", ScanService.appVisible)
+            .put("thermal", pm.currentThermalStatus)              // 0 none … 3 severe, 4+ critical
+            .put("battery_saver", pm.isPowerSaveMode)
+            .put("battery_optimised", !pm.isIgnoringBatteryOptimizations(context.packageName))
+            .put("free_ram_mb", mem.availMem / 1_000_000)
+            .put("low_memory", mem.lowMemory)
+            .put("app_native_mb", native)
+            .put("app_java_mb", (rt.totalMemory() - rt.freeMemory()) / 1_000_000)
+            .put("cpu_mhz_now_max", freqs)
+            .toString()
+    }
+
     /** Scan threads: a little above normal priority, so they keep their CPU share when the app is in the background. */
     fun boostThread() = android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_FOREGROUND)
 

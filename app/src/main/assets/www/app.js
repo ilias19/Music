@@ -414,6 +414,7 @@ const Player = (() => {
     document.title = `${meta.title} · Practice Room`;
     $("#compare-btn").hidden = !meta.page_count;
     $("#side-compare").hidden = !meta.page_count;
+    showScanLog(meta.info?.scan_log);
     updateMeta();
     $("#tr-out").textContent = fmtSemis(semitones);
     await loadXml(true);
@@ -1030,6 +1031,29 @@ const Player = (() => {
   $("#paper-scroll").addEventListener("scroll", pressCancel, { passive: true });
   $("#back").addEventListener("click", () => (location.hash = "#/"));
   $("#side-btn").addEventListener("click", () => { $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true; });
+  // ---- scan details: raw timings and phone state, to compare scans ----
+  function showScanLog(log) {
+    $("#scan-log-block").hidden = !log;
+    if (!log) return;
+    const lines = [];
+    const walk = (o, pre) => {
+      for (const [k, v] of Object.entries(o)) {
+        if (v && typeof v === "object" && !Array.isArray(v)) walk(v, `${pre}${k}.`);
+        else if (Array.isArray(v) && v.length && typeof v[0] === "object") v.forEach((x, i) => walk(x, `${pre}${k}[${i + 1}].`));
+        else lines.push(`${pre}${k}: ${Array.isArray(v) ? v.join(" ") : v}`);
+      }
+    };
+    walk(log, "");
+    $("#scan-log").textContent = lines.join("\n");
+  }
+  $("#scan-log-copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText($("#scan-log").textContent); toast("Copied"); }
+    catch {
+      const r = document.createRange(); r.selectNodeContents($("#scan-log"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); document.execCommand("copy"); toast("Copied");
+    }
+  });
+
   // ---- zoom: buttons, typed-in steps and pinch; remembered on this device ----
   function setZoom(z, rerender = true) {
     userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 20) / 20;   // 5% steps

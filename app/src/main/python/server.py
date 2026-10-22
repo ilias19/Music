@@ -21,6 +21,7 @@ import queue
 import re
 import shutil
 import sqlite3
+import sys
 import threading
 import time
 import traceback
@@ -279,9 +280,39 @@ def merge_pages(xmls: list[Path], title: str) -> str:
     return re.sub(r"\s*<movement-title>.*?</movement-title>", "", music.to_xml(score), count=1)
 
 
+def device_state() -> dict:
+    """CPU temperature state, free memory, in front or not... (phone only)."""
+    fn = getattr(S.get("platform"), "deviceState", None)
+    if fn is None:
+        return {}
+    try:
+        return json.loads(str(fn()))
+    except Exception:
+        return {}
+
+
+def release_memory() -> None:
+    """Hand freed memory back to the phone between scans (a page peaks at over 1 GB)."""
+    import gc
+    gc.collect()
+    if hasattr(sys, "getandroidapilevel"):
+        try:
+            import ctypes
+            ctypes.CDLL("libc.so").mallopt(-101, 0)   # M_PURGE: bionic returns free pages to the system
+        except Exception:
+            pass
+
+
 def run_scan(sid: str, files: list[Path], title: str) -> None:
     import omr_android
     started = time.time()
+    row = q("SELECT created FROM scores WHERE id=?", (sid,), one=True)
+    try:
+        waited = max(0, round((datetime.now(timezone.utc) - datetime.fromisoformat(row["created"])).total_seconds() - 0))
+    except Exception:
+        waited = None
+    log = {"waited_in_queue_s": waited, "pages": [], "device_at_start": device_state(), "in_front": [0, 0]}
+    S["scan_log"] = log
     try:
         update_score(sid, status="scanning")
         scan_progress(sid, title, "Preparing pages", 0.02)
@@ -301,8 +332,10 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
             def on_progress(f, text, i=i, prefix=prefix):
                 scan_progress(sid, title, prefix + text, round(0.08 + 0.85 * (i + f) / len(pages), 3))
 
+            t = time.time()
             try:
                 xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text, progress=on_progress)))
+                log["pages"].append({"total_s": round(time.time() - t, 1), **omr_android.last_timing})
             except Exception as e:
                 traceback.print_exc()
                 errors.append(f"page {i + 1}: {e}")
@@ -314,13 +347,23 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
             p.unlink()
         msg = f"Skipped {len(errors)} page(s) with no readable music" if errors else ""
         info["scan_seconds"] = round(time.time() - started)
+        log["device_at_end"] = device_state()
+        front, n = log.pop("in_front")
+        if n:
+            log["in_front_pct"] = round(100 * front / n)
+        log["scan_s"] = info["scan_seconds"]
+        info["scan_log"] = log
         update_score(sid, status="ready", message=msg, progress=1, info=info)
+        print("Scan log:", json.dumps(log), flush=True)
         print(f"Scan {sid}: {len(pages)} page(s) in {info['scan_seconds']} s", flush=True)
         platform_call("scanFinished", sid, title, True, jobs.qsize(), info["scan_seconds"])
     except Exception as e:
         traceback.print_exc()
         update_score(sid, status="failed", error=str(e)[:500], message="")
         platform_call("scanFinished", sid, title, False, jobs.qsize(), round(time.time() - started))
+    finally:
+        S.pop("scan_log", None)
+        release_memory()
 
 
 def scan_worker() -> None:
@@ -356,6 +399,14 @@ def platform_call(name: str, *args) -> None:
 
 def scan_progress(sid: str, title: str, message: str, progress: float) -> None:
     update_score(sid, message=message, progress=progress)
+    log = S.get("scan_log")
+    if log is not None and "in_front" in log:
+        st = device_state()
+        if "app_in_front" in st:
+            log["in_front"][0] += 1 if st["app_in_front"] else 0
+            log["in_front"][1] += 1
+        if st.get("thermal") is not None:
+            log["thermal_max"] = max(log.get("thermal_max", 0), st["thermal"])
     platform_call("scanProgress", sid, title, message, int(progress * 100), jobs.qsize())
 
 

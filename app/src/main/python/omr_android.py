@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import sys
 import threading
+import time
 import types
 from concurrent.futures import Future
 
@@ -24,6 +25,7 @@ _lock = threading.Lock()
 _geometry: dict = {}
 _model_paths: list = []
 _progress = {"fn": None}
+last_timing: dict = {}   # seconds spent per stage on the last page, for the scan details
 
 
 def _report(fraction: float, text: str) -> None:
@@ -132,6 +134,7 @@ def setup(bridge, models_dir: str) -> None:
             _geometry["width"] = int(image.shape[1])
             _geometry["total"] = max(1, sum(len(s.staffs) for s in staffs))
             _geometry["done"] = 0
+            _geometry["t_staffs"] = time.time()
             _report(0.45, f"Reading staff 1 of {_geometry['total']}")
             return orig_parse(debug, staffs, image, config, selected_staff)
 
@@ -194,10 +197,16 @@ def scan_page(png_path: str, ocr=None, progress=None) -> str:
         _geometry.clear()
         _progress["fn"] = progress
         _report(0.0, "Finding the staves")
+        t0 = time.time()
         try:
             process_image(png_path, config, XmlGeneratorArguments(False, None, None))
         finally:
             _progress["fn"] = None
+        t1 = time.time()
+        ts = _geometry.get("t_staffs", t1)
+        last_timing.clear()
+        last_timing.update(find_staves_s=round(ts - t0, 1), read_staves_s=round(t1 - ts, 1),
+                           staves=_geometry.get("total", 0))
         xml = os.path.splitext(png_path)[0] + ".musicxml"
         if not os.path.exists(xml):
             raise RuntimeError("No music found on this page")
@@ -205,7 +214,9 @@ def scan_page(png_path: str, ocr=None, progress=None) -> str:
             try:
                 import lyrics
                 from PIL import Image
+                t2 = time.time()
                 reader.join()
+                last_timing["wait_text_s"] = round(time.time() - t2, 1)
                 stats = lyrics.annotate(xml, _geometry["staffs"], _geometry["width"], Image.open(png_path).size[0], words.get("w") or [])
                 print("text on page:", stats, flush=True)
             except Exception:

@@ -284,6 +284,10 @@ def lead_sheet_scan(app: App):
     check("lead sheet tempo is read from the page (150)", st["bpm"] == 150, f"{st['bpm']} bpm")
     n = app.page.locator("#osmd text", has_text=re.compile(r"^\w{2,}$")).count()
     check("lyrics are drawn under the notes", n >= 50, f"{n} words drawn")
+    app.page.click("#side-btn")
+    log = app.page.inner_text("#scan-log") if app.page.is_visible("#scan-log") else ""
+    check("scan details show the timings", "pages[1].read_staves_s" in log and "scan_s" in log, log.replace("\n", " | ")[:400])
+    app.page.click("#side-btn")
 
 
 @section
