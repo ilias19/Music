@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -62,7 +62,15 @@ jobs:
           PR_KEYSTORE_PASSWORD: ${{ secrets.PR_KEYSTORE_PASSWORD }}
           PR_KEY_ALIAS: ${{ secrets.PR_KEY_ALIAS }}
           PR_KEY_PASSWORD: ${{ secrets.PR_KEY_PASSWORD }}
-        run: ./gradlew --no-daemon --stacktrace assembleRelease
+        run: |
+          mkdir -p ci-logs
+          ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee ci-logs/build.log
+
+      - name: Publish build log
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/publish_logs.sh build ci-logs
 
       - name: Name the APKs
         run: |
@@ -105,6 +113,12 @@ jobs:
           disk-size: 6G
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: bash tools/emulator_selftest.sh dist/PracticeRoom-*-x86_64.apk selftest-output
+
+      - name: Publish self-test output
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tools/publish_logs.sh emulator selftest-output
 
       - uses: actions/upload-artifact@v4
         if: always()
