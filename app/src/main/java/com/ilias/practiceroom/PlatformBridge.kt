@@ -2,7 +2,6 @@ package com.ilias.practiceroom
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
