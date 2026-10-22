@@ -50,6 +50,11 @@ def install(bridge) -> types.ModuleType:
     return mod
 
 
+def preload(path) -> None:
+    """Load a model into the native runtime ahead of use (the bridge caches sessions by path)."""
+    _bridge.open(str(path))
+
+
 def _to_bytes(buf) -> bytes:
     """Java byte[] arrives as a Chaquopy jarray of *signed* bytes."""
     if isinstance(buf, (bytes, bytearray)):

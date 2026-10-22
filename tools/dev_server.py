@@ -68,6 +68,8 @@ def main() -> None:
     bridge = ort_shim.MockBridge(real_ort)
     port = server.start(a.data, a.www, a.gallery, a.models, bridge, DesktopPlatform(), a.token, a.port)
     print(f"Practice Room dev server: http://127.0.0.1:{port}/__start?k={a.token}", flush=True)
+    import threading
+    threading.Thread(target=server.warm_up, name="warmup", daemon=True).start()   # as the phone does at launch
     while True:
         time.sleep(3600)
 

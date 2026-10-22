@@ -1,6 +1,8 @@
 package com.ilias.practiceroom
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
@@ -18,7 +20,16 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 /** Phone-only services the Python backend calls (desktop tests use PyMuPDF instead). */
-class PlatformBridge {
+class PlatformBridge(private val context: Context) {
+    // ---- scan progress (called from the Python scan worker) ----
+    fun scanProgress(id: String, title: String, message: String, percent: Int, queued: Int) =
+        ScanService.progress(context, ScanService.Progress(id, title, message, percent, queued))
+
+    fun scanFinished(id: String, title: String, ok: Boolean, queued: Int) =
+        ScanService.finished(context, id, title, ok)
+
+    fun scanIdle() = ScanService.idle()
+
     /** Render every page of a PDF to PNG with Android's PdfRenderer. Returns the PNG paths. */
     fun renderPdf(pdfPath: String, outDir: String, dpi: Int): Array<String> {
         val out = mutableListOf<String>()

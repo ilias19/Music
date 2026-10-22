@@ -140,7 +140,8 @@ class App:
             data = (ASSETS / n).read_bytes()
             mime = {"png": "image/png", "jpg": "image/jpeg", "pdf": "application/pdf", "txt": "text/plain",
                     "musicxml": "application/vnd.recordare.musicxml+xml", "mxl": "application/vnd.recordare.musicxml"}[n.rsplit(".", 1)[1]]
-            files.append({"name": n, "mime": mime, "b64": base64.b64encode(data).decode()})
+            name = (title.replace(" ", "_") + "." + n.rsplit(".", 1)[1]) if title else n   # the app titles scans by file name
+            files.append({"name": name, "mime": mime, "b64": base64.b64encode(data).decode()})
         self.page.evaluate("""async (files) => {
             const list = files.map(f => new File([Uint8Array.from(atob(f.b64), c => c.charCodeAt(0))], f.name, { type: f.mime }));
             await handleFiles(list);
@@ -723,6 +724,34 @@ def android_specific(app: App):
     adb("shell", "input", "keyevent", "4")
     time.sleep(2)
 
+    # a scan keeps going in the background, with a progress notification, and says when it's ready
+    app.library()
+    app.upload("ode_photo.jpg", title="background scan")
+    time.sleep(1.5)
+    adb("shell", "input", "keyevent", "3")   # Home: the app goes to the background mid-scan
+    time.sleep(2)
+    notes = adb("shell", "dumpsys", "notification", "--noredact")
+    check("scanning shows a notification", "Scanning" in notes and "background scan" in notes,
+          " | ".join(l.strip() for l in notes.splitlines() if "android.title" in l or "android.text" in l)[:300])
+    t0 = time.time()
+    ready = False
+    while time.time() - t0 < 300 and not ready:
+        time.sleep(5)
+        ready = "Ready to play" in adb("shell", "dumpsys", "notification", "--noredact")
+    check("scan finishes while the app is in the background", ready, f"{time.time() - t0:.0f} s")
+    adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
+    time.sleep(3)
+    app.reattach()
+    s = app.wait_card("background scan", timeout=60)
+    check("the background scan is ready in the library", s["status"] == "ready" and s["info"]["measures"] == 8, str(s.get("info")))
+    adb("shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", f"practiceroom://open/#/score/{s['id']}",
+        "-n", f"{PKG}/.MainActivity")
+    time.sleep(3)
+    app.reattach()
+    app.wait_loaded()
+    check("tapping the notification opens the score", app.page.evaluate("location.hash") == f"#/score/{s['id']}",
+          app.page.evaluate("location.hash"))
+
     # rotation keeps the app (no restart) and the player
     app.open("Chorale BWV 66.6 (Bach)")
     adb("shell", "settings", "put", "system", "accelerometer_rotation", "0")
@@ -775,6 +804,7 @@ def main() -> int:
     with sync_playwright() as p:
         if a.android:
             adb("shell", "pm", "grant", PKG, "android.permission.RECORD_AUDIO")
+            adb("shell", "pm", "grant", PKG, "android.permission.POST_NOTIFICATIONS")
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
 
             def connect():

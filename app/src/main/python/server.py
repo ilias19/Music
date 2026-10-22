@@ -80,8 +80,6 @@ def init_db() -> None:
             id TEXT PRIMARY KEY, score_id TEXT, created TEXT, filename TEXT,
             mime TEXT, seconds REAL, label TEXT);
         """)
-        conn.execute("UPDATE scores SET status='failed', error='Interrupted when the app closed. Scan it again.' "
-                     "WHERE status IN ('queued','scanning')")
         conn.commit()
         conn.close()
 
@@ -284,7 +282,8 @@ def merge_pages(xmls: list[Path], title: str) -> str:
 def run_scan(sid: str, files: list[Path], title: str) -> None:
     import omr_android
     try:
-        update_score(sid, status="scanning", message="Preparing pages", progress=0.02)
+        update_score(sid, status="scanning")
+        scan_progress(sid, title, "Preparing pages", 0.02)
         work = score_dir(sid) / "pages"
         work.mkdir(exist_ok=True)
         pages: list[Path] = []
@@ -292,12 +291,11 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
             pages.extend(pages_from_upload(f, work))
         if not pages:
             raise ValueError("Nothing to scan")
-        update_score(sid, message="Loading the recognition models", progress=0.05)
+        scan_progress(sid, title, "Loading the recognition models", 0.05)
         omr_android.setup(S["bridge"], str(S["models"]))
         xmls, errors = [], []
         for i, p in enumerate(pages):
-            update_score(sid, message=f"Reading page {i + 1} of {len(pages)}",
-                         progress=round(0.08 + 0.85 * i / len(pages), 3))
+            scan_progress(sid, title, f"Reading page {i + 1} of {len(pages)}", round(0.08 + 0.85 * i / len(pages), 3))
             try:
                 xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text)))
             except Exception as e:
@@ -305,21 +303,52 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
                 errors.append(f"page {i + 1}: {e}")
         if not xmls:
             raise ValueError("; ".join(errors) or "No music found")
-        update_score(sid, message="Assembling score", progress=0.95)
+        scan_progress(sid, title, "Assembling score", 0.95)
         info = save_score_xml(sid, merge_pages(xmls, title))
         for p in work.glob("*_teaser.png"):
             p.unlink()
         msg = f"Skipped {len(errors)} page(s) with no readable music" if errors else ""
         update_score(sid, status="ready", message=msg, progress=1, info=info)
+        platform_call("scanFinished", sid, title, True, jobs.qsize())
     except Exception as e:
         traceback.print_exc()
         update_score(sid, status="failed", error=str(e)[:500], message="")
+        platform_call("scanFinished", sid, title, False, jobs.qsize())
 
 
 def scan_worker() -> None:
     while True:
         sid, files, title = jobs.get()
         run_scan(sid, files, title)
+        if jobs.empty():
+            platform_call("scanIdle")
+
+
+def requeue_interrupted() -> None:
+    """Scans cut short when the app was closed start again from their saved uploads."""
+    for r in q("SELECT id, title FROM scores WHERE status IN ('queued','scanning') ORDER BY created"):
+        files = sorted((score_dir(r["id"]) / "upload").glob("upload_*"))
+        if files:
+            update_score(r["id"], status="queued", progress=0, message="Waiting in queue")
+            jobs.put((r["id"], files, r["title"]))
+        else:
+            update_score(r["id"], status="failed", error="Interrupted when the app closed. Scan it again.", message="")
+
+
+def platform_call(name: str, *args) -> None:
+    """Tell the phone about scan progress (notification, keeping the app alive). No-op on desktop."""
+    fn = getattr(S.get("platform"), name, None)
+    if fn is None:
+        return
+    try:
+        fn(*args)
+    except Exception:
+        traceback.print_exc()
+
+
+def scan_progress(sid: str, title: str, message: str, progress: float) -> None:
+    update_score(sid, message=message, progress=progress)
+    platform_call("scanProgress", sid, title, message, int(progress * 100), jobs.qsize())
 
 
 # ------------------------------------------------------------------- routes --
@@ -688,6 +717,7 @@ def _start(data_dir, www_dir, gallery_dir, models_dir, bridge, platform, token, 
     S["scores"].mkdir(parents=True, exist_ok=True)
     init_db()
     seed_gallery()
+    requeue_interrupted()
     threading.Thread(target=scan_worker, name="scan", daemon=True).start()
     httpd = ThreadingHTTPServer(("127.0.0.1", int(port)), Handler)
     httpd.daemon_threads = True
@@ -711,9 +741,17 @@ def native_check() -> str:
 
 
 def warm_up() -> None:
-    """Import the heavy modules ahead of first use (called in the background)."""
+    """Get the scanner ready ahead of the first scan (called in the background at launch):
+    import the heavy modules and load the three neural networks, which takes several
+    seconds on a phone and otherwise delays the first scan."""
+    import time
+    t = time.time()
     try:
         print("Practice Room imports:", native_check(), flush=True)
+        import omr_android
+        omr_android.setup(S["bridge"], str(S["models"]))
+        omr_android.preload()
+        print(f"Scanner ready in {time.time() - t:.1f} s", flush=True)
     except Exception:
         traceback.print_exc()
 

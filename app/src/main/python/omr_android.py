@@ -22,6 +22,7 @@ import cv2
 _ready = False
 _lock = threading.Lock()
 _geometry: dict = {}
+_model_paths: list = []
 
 SEGNET = "segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.onnx"
 ENCODER = "encoder_pytorch_model_396-f6feedb42ff90087d898b0941a55d040fa6b2903.onnx"
@@ -95,6 +96,7 @@ def setup(bridge, models_dir: str) -> None:
         import homr.segmentation.config as seg_cfg
         import homr.transformer.configs as tr_cfg
         seg_path = os.path.join(models_dir, SEGNET)
+        _model_paths[:] = [seg_path, os.path.join(models_dir, ENCODER), os.path.join(models_dir, DECODER)]
         seg_cfg.segnet_path_onnx = seg_path
 
         orig_init = tr_cfg.FilePaths.__init__
@@ -124,6 +126,21 @@ def setup(bridge, models_dir: str) -> None:
         _ready = True
 
 
+def preload() -> None:
+    """Load the three models into the native runtime now (it caches them by path), and
+    import homr's modules, so the first scan doesn't wait for either."""
+    import homr.main  # noqa: F401
+    import homr.transformer.staff2score  # noqa: F401
+    import numpy as np
+    import ort_shim
+    for path in _model_paths:
+        ort_shim.preload(path)
+    # one tiny run each: the runtime sets up its memory and kernels on the first call
+    seg, enc = ort_shim.InferenceSession(_model_paths[0]), ort_shim.InferenceSession(_model_paths[1])
+    seg.run(None, {seg.get_inputs()[0].name: np.full((1, 3, 320, 320), 255, np.float32)})
+    enc.run(None, {enc.get_inputs()[0].name: np.zeros((1, 1, 256, 1280), np.float32)})
+
+
 def scan_page(png_path: str, ocr=None) -> str:
     """Recognise one page image. Returns the MusicXML path.
 
@@ -134,6 +151,18 @@ def scan_page(png_path: str, ocr=None) -> str:
     from homr.music_xml_generator import XmlGeneratorArguments
 
     config = ProcessingConfig(False, False, False, False, -1, False, False, False)
+    words: dict = {}
+    reader = None
+    if ocr is not None:
+        # read the page's text on another thread while homr reads the notes (ML Kit runs natively)
+        def read_text():
+            try:
+                words["w"] = ocr(png_path)
+            except Exception:
+                import traceback
+                traceback.print_exc()
+        reader = threading.Thread(target=read_text, name="ocr", daemon=True)
+        reader.start()
     with _lock:  # one scan at a time: the models are big
         _geometry.clear()
         process_image(png_path, config, XmlGeneratorArguments(False, None, None))
@@ -144,8 +173,8 @@ def scan_page(png_path: str, ocr=None) -> str:
             try:
                 import lyrics
                 from PIL import Image
-                words = ocr(png_path)
-                stats = lyrics.annotate(xml, _geometry["staffs"], _geometry["width"], Image.open(png_path).size[0], words)
+                reader.join()
+                stats = lyrics.annotate(xml, _geometry["staffs"], _geometry["width"], Image.open(png_path).size[0], words.get("w") or [])
                 print("text on page:", stats, flush=True)
             except Exception:
                 import traceback

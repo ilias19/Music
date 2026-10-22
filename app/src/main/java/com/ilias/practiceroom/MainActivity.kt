@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -44,9 +45,11 @@ class MainActivity : ComponentActivity() {
     private var cameraUri: Uri? = null
     private var pendingMic: PermissionRequest? = null
 
+    private val askNotifications = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
     private val pickFiles = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         fileCallback?.onReceiveValue(uris.toTypedArray())
         fileCallback = null
+        if (uris.isNotEmpty()) askNotificationsOnce()
     }
     private val pickFile = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         fileCallback?.onReceiveValue(uri?.let { arrayOf(it) })
@@ -56,6 +59,7 @@ class MainActivity : ComponentActivity() {
         val uri = cameraUri
         fileCallback?.onReceiveValue(if (ok && uri != null) arrayOf(uri) else null)
         fileCallback = null
+        if (ok) askNotificationsOnce()
     }
     private val askMic = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val req = pendingMic ?: return@registerForActivityResult
@@ -92,12 +96,45 @@ class MainActivity : ComponentActivity() {
 
         val selfTest = intent.getBooleanExtra("selftest", false) && savedInstanceState == null
         // After a theme change the activity is rebuilt: come back to the same screen.
-        val route = savedInstanceState?.getString("route")?.takeIf { it.startsWith("#/") } ?: ""
+        val route = savedInstanceState?.getString("route")?.takeIf { it.startsWith("#/") } ?: routeOf(intent)
         uiMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
         thread(name = "startup") { startBackend(selfTest, route) }
     }
 
     private var uiMode = 0
+
+    /** A notification tap carries practiceroom://open/#/score/<id>. */
+    private fun routeOf(i: Intent?): String =
+        i?.data?.takeIf { it.scheme == "practiceroom" }?.toString()?.substringAfter('#', "")
+            ?.takeIf { it.startsWith("/") }?.let { "#$it" } ?: ""
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val route = routeOf(intent)
+        if (route.isNotEmpty() && origin.isNotEmpty()) {
+            web.evaluateJavascript("location.hash = ${org.json.JSONObject.quote(route)}", null)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ScanService.appVisible = true
+    }
+
+    override fun onPause() {
+        ScanService.appVisible = false
+        super.onPause()
+    }
+
+    /** Ask once, after the first files are picked, so "score ready" can be shown when you're elsewhere. */
+    private fun askNotificationsOnce() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = getSharedPreferences("app", MODE_PRIVATE)
+        if (prefs.getBoolean("asked_notifications", false)) return
+        prefs.edit().putBoolean("asked_notifications", true).apply()
+        askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -127,7 +164,7 @@ class MainActivity : ComponentActivity() {
                 server = Python.getInstance().getModule("server")
                 port = server.callAttr(
                     "start", files.data.path, files.www.path, files.gallery.path, files.models.path,
-                    bridge, PlatformBridge(), token,
+                    bridge, PlatformBridge(applicationContext), token,
                 ).toInt()
             }
             origin = "http://127.0.0.1:$port"
