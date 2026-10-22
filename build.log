@@ -1,0 +1,292 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:buildKotlinToolingMetadata
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preEmuReleaseBuild UP-TO-DATE
+> Task :app:generateEmuReleaseBuildConfig
+> Task :app:extractEmuReleasePythonBuildPackages
+
+> Task :app:installEmuReleasePythonRequirements
+Chaquopy: Installing for x86_64
+Looking in indexes: https://pypi.org/simple, https://chaquo.com/pypi-13.1
+Collecting numpy
+  Downloading https://chaquo.com/pypi-13.1/numpy/numpy-1.26.2-0-cp310-cp310-android_21_x86_64.whl (6.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.5/6.5 MB 9.7 MB/s  0:00:01
+Collecting opencv-python-headless
+  Downloading https://chaquo.com/pypi-13.1/opencv-python-headless/opencv_python_headless-4.5.1.48-2-cp310-cp310-android_24_x86_64.whl (10.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.5/10.5 MB 29.2 MB/s  0:00:00
+Collecting pillow
+  Downloading https://chaquo.com/pypi-13.1/pillow/pillow-11.0.0-0-cp310-cp310-android_24_x86_64.whl (603 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 603.2/603.2 kB 104.4 MB/s  0:00:00
+Collecting music21==9.9.2
+  Downloading music21-9.9.2-py3-none-any.whl.metadata (5.2 kB)
+Collecting musicxml==1.4
+  Downloading musicxml-1.4-py3-none-any.whl.metadata (727 bytes)
+Collecting typing_extensions==4.16.0
+  Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting jsonpickle==4.1.4
+  Downloading jsonpickle-4.1.4-py3-none-any.whl.metadata (8.1 kB)
+Collecting more-itertools==11.1.0
+  Downloading more_itertools-11.1.0-py3-none-any.whl.metadata (41 kB)
+Collecting webcolors==25.10.0
+  Downloading webcolors-25.10.0-py3-none-any.whl.metadata (2.2 kB)
+Collecting joblib==1.6.0
+  Downloading joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting chardet==5.2.0
+  Downloading chardet-5.2.0-py3-none-any.whl.metadata (3.4 kB)
+Collecting requests==2.34.2
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting urllib3==2.8.0
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting idna==3.20
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting certifi==2026.10.19
+  Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+Collecting charset-normalizer==3.5.2
+  Downloading charset_normalizer-3.5.2-py3-none-any.whl.metadata (46 kB)
+Collecting chaquopy-libjpeg
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libjpeg/chaquopy_libjpeg-1.5.3-1-py3-none-android_21_x86_64.whl (147 kB)
+Collecting chaquopy-libpng
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libpng/chaquopy_libpng-1.6.34-1-py3-none-android_21_x86_64.whl (159 kB)
+Collecting chaquopy-freetype
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-freetype/chaquopy_freetype-2.9.1-2-py3-none-android_21_x86_64.whl (567 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 567.8/567.8 kB 2.2 MB/s  0:00:00
+Collecting chaquopy-openblas
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-openblas/chaquopy_openblas-0.2.20-5-py3-none-android_21_x86_64.whl (5.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.3/5.3 MB 15.6 MB/s  0:00:00
+Collecting chaquopy-libgfortran
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libgfortran/chaquopy_libgfortran-4.9-0-py3-none-android_21_x86_64.whl (541 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 541.1/541.1 kB 9.7 MB/s  0:00:00
+Collecting chaquopy-libcxx
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libcxx/chaquopy_libcxx-180000-0-py3-none-android_24_x86_64.whl (422 kB)
+Downloading music21-9.9.2-py3-none-any.whl (20.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 20.1/20.1 MB 89.6 MB/s  0:00:00
+Downloading musicxml-1.4-py3-none-any.whl (292 kB)
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Downloading jsonpickle-4.1.4-py3-none-any.whl (47 kB)
+Downloading more_itertools-11.1.0-py3-none-any.whl (72 kB)
+Downloading webcolors-25.10.0-py3-none-any.whl (14 kB)
+Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+Downloading chardet-5.2.0-py3-none-any.whl (199 kB)
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+Downloading charset_normalizer-3.5.2-py3-none-any.whl (68 kB)
+Installing collected packages: musicxml, chaquopy-openblas, chaquopy-libpng, chaquopy-libjpeg, chaquopy-libgfortran, chaquopy-libcxx, chaquopy-freetype, webcolors, urllib3, typing_extensions, requests, pillow, opencv-python-headless, numpy, music21, more-itertools, jsonpickle, joblib, idna, charset-normalizer, chardet, certifi
+
+Successfully installed certifi-2026.10.19 chaquopy-freetype-2.9.1 chaquopy-libcxx-180000 chaquopy-libgfortran-4.9 chaquopy-libjpeg-1.5.3 chaquopy-libpng-1.6.34 chaquopy-openblas-0.2.20 chardet-5.2.0 charset-normalizer-3.5.2 idna-3.20 joblib-1.6.0 jsonpickle-4.1.4 more-itertools-11.1.0 music21-9.9.2 musicxml-1.4 numpy-1.26.2 opencv-python-headless-4.5.1.48 pillow-11.0.0 requests-2.34.2 typing_extensions-4.16.0 urllib3-2.8.0 webcolors-25.10.0
+
+> Task :app:mergeEmuReleasePythonSources
+> Task :app:generateEmuReleasePythonProxies
+> Task :app:generateEmuReleaseResValues
+> Task :app:checkEmuReleaseAarMetadata
+> Task :app:mapEmuReleaseSourceSetPaths
+> Task :app:generateEmuReleaseResources
+> Task :app:packageEmuReleaseResources
+> Task :app:mergeEmuReleaseResources
+> Task :app:createEmuReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksEmuRelease
+> Task :app:parseEmuReleaseLocalResources
+> Task :app:processEmuReleaseMainManifest
+> Task :app:processEmuReleaseManifest
+> Task :app:processEmuReleaseManifestForPackage
+> Task :app:javaPreCompileEmuRelease
+> Task :app:extractProguardFiles
+> Task :app:generateEmuReleasePythonJniLibs
+> Task :app:processEmuReleaseResources
+> Task :app:mergeEmuReleaseJniLibFolders
+> Task :app:mergeEmuReleaseStartupProfile
+> Task :app:checkEmuReleaseDuplicateClasses
+> Task :app:mergeEmuReleaseArtProfile
+> Task :app:mergeEmuReleaseShaders
+> Task :app:compileEmuReleaseShaders NO-SOURCE
+> Task :app:generateEmuReleaseAssets UP-TO-DATE
+> Task :app:mergeEmuReleaseNativeLibs
+> Task :app:generateEmuReleasePythonMiscAssets
+
+> Task :app:stripEmuReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libchaquopy_java.so, libcrypto_chaquopy.so, libcrypto_python.so, libonnxruntime.so, libonnxruntime4j_jni.so, libpython3.10.so, libsqlite3_chaquopy.so, libsqlite3_python.so, libssl_chaquopy.so, libssl_python.so.
+
+> Task :app:desugarEmuReleaseFileDependencies
+> Task :app:generateEmuReleasePythonRequirementsAssets
+> Task :app:extractEmuReleaseNativeSymbolTables
+> Task :app:mergeEmuReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateEmuReleasePythonSourceAssets
+> Task :app:generateEmuReleasePythonBuildAssets
+> Task :app:mergeEmuReleaseAssets
+> Task :app:extractEmuReleaseVersionControlInfo
+> Task :app:optimizeEmuReleaseResources
+> Task :app:collectEmuReleaseDependencies
+> Task :app:sdkEmuReleaseDependencyData
+> Task :app:mergeExtDexEmuRelease
+> Task :app:compileEmuReleaseKotlin
+> Task :app:compressEmuReleaseAssets
+> Task :app:validateSigningEmuRelease
+> Task :app:compileEmuReleaseJavaWithJavac
+> Task :app:generateEmuReleaseLintVitalReportModel
+> Task :app:dexBuilderEmuRelease
+> Task :app:mergeEmuReleaseGlobalSynthetics
+> Task :app:processEmuReleaseJavaRes
+> Task :app:writeEmuReleaseAppMetadata
+> Task :app:writeEmuReleaseSigningConfigVersions
+> Task :app:prePhoneReleaseBuild UP-TO-DATE
+> Task :app:generatePhoneReleaseBuildConfig
+> Task :app:mergeEmuReleaseJavaResource
+> Task :app:mergeDexEmuRelease
+> Task :app:extractPhoneReleasePythonBuildPackages
+> Task :app:compileEmuReleaseArtProfile
+
+> Task :app:installPhoneReleasePythonRequirements
+Chaquopy: Installing for arm64-v8a
+Looking in indexes: https://pypi.org/simple, https://chaquo.com/pypi-13.1
+Collecting numpy
+  Downloading https://chaquo.com/pypi-13.1/numpy/numpy-1.26.2-0-cp310-cp310-android_21_arm64_v8a.whl (5.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.0/5.0 MB 8.0 MB/s  0:00:00
+Collecting opencv-python-headless
+  Downloading https://chaquo.com/pypi-13.1/opencv-python-headless/opencv_python_headless-4.5.1.48-2-cp310-cp310-android_24_arm64_v8a.whl (9.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.0/9.0 MB 25.5 MB/s  0:00:00
+Collecting pillow
+  Downloading https://chaquo.com/pypi-13.1/pillow/pillow-11.0.0-0-cp310-cp310-android_24_arm64_v8a.whl (582 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 582.7/582.7 kB 4.8 MB/s  0:00:00
+Collecting music21==9.9.2
+  Using cached music21-9.9.2-py3-none-any.whl.metadata (5.2 kB)
+Collecting musicxml==1.4
+  Using cached musicxml-1.4-py3-none-any.whl.metadata (727 bytes)
+Collecting typing_extensions==4.16.0
+  Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting jsonpickle==4.1.4
+  Using cached jsonpickle-4.1.4-py3-none-any.whl.metadata (8.1 kB)
+Collecting more-itertools==11.1.0
+  Using cached more_itertools-11.1.0-py3-none-any.whl.metadata (41 kB)
+Collecting webcolors==25.10.0
+  Using cached webcolors-25.10.0-py3-none-any.whl.metadata (2.2 kB)
+Collecting joblib==1.6.0
+  Using cached joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting chardet==5.2.0
+  Using cached chardet-5.2.0-py3-none-any.whl.metadata (3.4 kB)
+Collecting requests==2.34.2
+  Using cached requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting urllib3==2.8.0
+  Using cached urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting idna==3.20
+  Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting certifi==2026.10.19
+  Using cached certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+Collecting charset-normalizer==3.5.2
+  Using cached charset_normalizer-3.5.2-py3-none-any.whl.metadata (46 kB)
+Collecting chaquopy-libjpeg
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libjpeg/chaquopy_libjpeg-1.5.3-1-py3-none-android_21_arm64_v8a.whl (176 kB)
+Collecting chaquopy-libpng
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libpng/chaquopy_libpng-1.6.34-1-py3-none-android_21_arm64_v8a.whl (175 kB)
+Collecting chaquopy-freetype
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-freetype/chaquopy_freetype-2.9.1-2-py3-none-android_21_arm64_v8a.whl (533 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 533.8/533.8 kB 67.2 MB/s  0:00:00
+
+> Task :app:lintVitalAnalyzeEmuRelease
+
+> Task :app:installPhoneReleasePythonRequirements
+Collecting chaquopy-openblas
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-openblas/chaquopy_openblas-0.2.20-5-py3-none-android_21_arm64_v8a.whl (4.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.3/4.3 MB 23.8 MB/s  0:00:00
+Collecting chaquopy-libgfortran
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libgfortran/chaquopy_libgfortran-4.9-0-py3-none-android_21_arm64_v8a.whl (495 kB)
+Collecting chaquopy-libcxx
+  Downloading https://chaquo.com/pypi-13.1/chaquopy-libcxx/chaquopy_libcxx-180000-0-py3-none-android_24_arm64_v8a.whl (413 kB)
+Using cached music21-9.9.2-py3-none-any.whl (20.1 MB)
+Using cached musicxml-1.4-py3-none-any.whl (292 kB)
+Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Using cached jsonpickle-4.1.4-py3-none-any.whl (47 kB)
+Using cached more_itertools-11.1.0-py3-none-any.whl (72 kB)
+Using cached webcolors-25.10.0-py3-none-any.whl (14 kB)
+Using cached joblib-1.6.0-py3-none-any.whl (306 kB)
+Using cached chardet-5.2.0-py3-none-any.whl (199 kB)
+Using cached requests-2.34.2-py3-none-any.whl (73 kB)
+Using cached urllib3-2.8.0-py3-none-any.whl (135 kB)
+Using cached idna-3.20-py3-none-any.whl (69 kB)
+Using cached certifi-2026.10.19-py3-none-any.whl (136 kB)
+Using cached charset_normalizer-3.5.2-py3-none-any.whl (68 kB)
+Installing collected packages: musicxml, chaquopy-openblas, chaquopy-libpng, chaquopy-libjpeg, chaquopy-libgfortran, chaquopy-libcxx, chaquopy-freetype, webcolors, urllib3, typing_extensions, requests, pillow, opencv-python-headless, numpy, music21, more-itertools, jsonpickle, joblib, idna, charset-normalizer, chardet, certifi
+
+Successfully installed certifi-2026.10.19 chaquopy-freetype-2.9.1 chaquopy-libcxx-180000 chaquopy-libgfortran-4.9 chaquopy-libjpeg-1.5.3 chaquopy-libpng-1.6.34 chaquopy-openblas-0.2.20 chardet-5.2.0 charset-normalizer-3.5.2 idna-3.20 joblib-1.6.0 jsonpickle-4.1.4 more-itertools-11.1.0 music21-9.9.2 musicxml-1.4 numpy-1.26.2 opencv-python-headless-4.5.1.48 pillow-11.0.0 requests-2.34.2 typing_extensions-4.16.0 urllib3-2.8.0 webcolors-25.10.0
+
+> Task :app:lintVitalReportEmuRelease
+> Task :app:lintVitalEmuRelease
+> Task :app:mergePhoneReleasePythonSources
+> Task :app:generatePhoneReleasePythonProxies
+> Task :app:generatePhoneReleaseResValues
+> Task :app:checkPhoneReleaseAarMetadata
+> Task :app:mapPhoneReleaseSourceSetPaths
+> Task :app:generatePhoneReleaseResources
+> Task :app:packagePhoneReleaseResources
+> Task :app:mergePhoneReleaseResources
+> Task :app:packageEmuRelease
+> Task :app:createEmuReleaseApkListingFileRedirect
+> Task :app:assembleEmuRelease
+> Task :app:createPhoneReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksPhoneRelease
+> Task :app:parsePhoneReleaseLocalResources
+> Task :app:processPhoneReleaseMainManifest
+> Task :app:processPhoneReleaseManifest
+> Task :app:javaPreCompilePhoneRelease
+> Task :app:processPhoneReleaseManifestForPackage
+> Task :app:processPhoneReleaseResources
+> Task :app:generatePhoneReleasePythonJniLibs
+> Task :app:mergePhoneReleaseJniLibFolders
+> Task :app:checkPhoneReleaseDuplicateClasses
+> Task :app:mergePhoneReleaseStartupProfile
+> Task :app:mergePhoneReleaseArtProfile
+> Task :app:mergePhoneReleaseShaders
+> Task :app:compilePhoneReleaseShaders NO-SOURCE
+> Task :app:generatePhoneReleaseAssets UP-TO-DATE
+> Task :app:mergePhoneReleaseNativeLibs
+> Task :app:desugarPhoneReleaseFileDependencies
+> Task :app:generatePhoneReleasePythonMiscAssets
+
+> Task :app:stripPhoneReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libchaquopy_java.so, libcrypto_chaquopy.so, libcrypto_python.so, libonnxruntime.so, libonnxruntime4j_jni.so, libpython3.10.so, libsqlite3_chaquopy.so, libsqlite3_python.so, libssl_chaquopy.so, libssl_python.so.
+
+> Task :app:mergeExtDexPhoneRelease
+> Task :app:compilePhoneReleaseKotlin
+> Task :app:generatePhoneReleasePythonRequirementsAssets
+> Task :app:compilePhoneReleaseJavaWithJavac
+> Task :app:generatePhoneReleaseLintVitalReportModel
+> Task :app:extractPhoneReleaseNativeSymbolTables
+> Task :app:dexBuilderPhoneRelease
+> Task :app:mergePhoneReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:mergePhoneReleaseGlobalSynthetics
+> Task :app:generatePhoneReleasePythonSourceAssets
+> Task :app:generatePhoneReleasePythonBuildAssets
+> Task :app:mergePhoneReleaseAssets
+> Task :app:extractPhoneReleaseVersionControlInfo
+> Task :app:processPhoneReleaseJavaRes
+> Task :app:mergeDexPhoneRelease
+> Task :app:mergePhoneReleaseJavaResource
+> Task :app:lintVitalAnalyzePhoneRelease
+> Task :app:compilePhoneReleaseArtProfile
+> Task :app:collectPhoneReleaseDependencies
+> Task :app:lintVitalReportPhoneRelease
+> Task :app:sdkPhoneReleaseDependencyData
+> Task :app:lintVitalPhoneRelease
+> Task :app:validateSigningPhoneRelease
+> Task :app:writePhoneReleaseAppMetadata
+> Task :app:writePhoneReleaseSigningConfigVersions
+> Task :app:optimizePhoneReleaseResources
+> Task :app:compressPhoneReleaseAssets
+> Task :app:packagePhoneRelease
+> Task :app:createPhoneReleaseApkListingFileRedirect
+> Task :app:assemblePhoneRelease
+> Task :app:assembleRelease
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1792679167592.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/Music/Music/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 20s
+116 actionable tasks: 116 executed
