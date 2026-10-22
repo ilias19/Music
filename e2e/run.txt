@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 772, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 708, in main
+    browser, page = connect()
+                    ^^^^^^^^^
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 706, in connect
+    raise RuntimeError("couldn't attach to the app's WebView")
+RuntimeError: couldn't attach to the app's WebView
