@@ -245,13 +245,17 @@ const Sound = (() => {
     return makeSynth();
   }
 
+  // instrument -> volume (dB, the slider) -> gate (0/1, mute and solo) -> master.
+  // Mute must be separate from volume: Tone mutes by setting volume to -Infinity,
+  // so applying the slider value afterwards would silently un-mute.
   function channel(track) {
     if (!voices.has(track)) {
-      const vol = new Tone.Volume(0).connect(master);
+      const gate = new Tone.Gain(1).connect(master);
+      const vol = new Tone.Volume(0).connect(gate);
       const kind = "piano";
       const inst = makeInstrument(kind);
       inst.connect(vol);
-      voices.set(track, { inst, vol, kind, sampled: kind === "piano" && !!buffers });
+      voices.set(track, { inst, vol, gate, muted: false, kind, sampled: kind === "piano" && !!buffers });
     }
     return voices.get(track);
   }
@@ -268,7 +272,7 @@ const Sound = (() => {
 
   function note(track, midi, durSec, time, vel = 0.75) {
     const v = channel(track);
-    if (v.vol.mute) return;
+    if (v.muted) return;
     v.inst.triggerAttackRelease(Tone.Frequency(midi, "midi").toFrequency(), Math.max(0.05, durSec), time, vel);
   }
 
@@ -276,8 +280,11 @@ const Sound = (() => {
 
   function setTrack(track, { mute, db, instrument }) {
     const v = channel(track);
-    if (mute !== undefined) v.vol.mute = mute;
     if (db !== undefined) v.vol.volume.value = db;
+    if (mute !== undefined) {
+      v.muted = mute;
+      v.gate.gain.rampTo(mute ? 0 : 1, 0.02);   // also silences notes already sounding
+    }
     if (instrument && instrument !== v.kind) {
       v.inst.releaseAll?.();
       v.inst.dispose();
