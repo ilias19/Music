@@ -57,6 +57,22 @@ CI signs with the key in these repository secrets: `PR_KEYSTORE_B64` (base64 `.j
 with the same key, so if you lose it, you have to uninstall, and that deletes your scores and recordings. Without
 the secrets, CI falls back to a throwaway debug key.
 
+## Tests
+
+`tests/e2e/run_e2e.py` uses the app the way a person would: library, importing, scanning (photo, two pages, PDF,
+a page with no music, a real lead sheet), playback, tempo, count-in, metronome, transposing, loops, skipping the
+intro, the Mixer, zoom, comparing with the original scan, recording, exports, practice stats, rename/delete,
+restarting the app, and edge cases like leaving a score while it plays. It checks sound by metering the real audio
+output, not by reading button states.
+
+- Desktop: `python tools/dev_server.py --models …` then `python tests/e2e/run_e2e.py --url "http://127.0.0.1:8020/__start?k=dev"`
+- Android: CI runs it **inside the installed app** on an emulator, through the WebView's DevTools
+  (`tests/e2e/cdp_relay.py` works around a call Android WebView rejects). Android-only checks cover the back
+  button, files saved to Downloads, the system file picker, rotation and dark mode. A release is published only
+  when every check passes. Results, screenshots and logcat go to the `ci-logs-<run>-emulator` branch.
+
+Not covered by automation: the camera ("Take a photo") and real piano-sample quality, which need a real phone.
+
 ## Accuracy and speed
 
 Same recognition as the desktop version: 30/30 notes on a clean melody, 30/30 on a blurred and rotated phone-style photo,
