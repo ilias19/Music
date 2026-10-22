@@ -1,0 +1,312 @@
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 0: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 1: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 2: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 3: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 4: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 5: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 6: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 7: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 8: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 9: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 10: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 11: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 12: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 13: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 14: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 15: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 16: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 17: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 18: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 19: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 20: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 21: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 22: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 23: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 24: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 25: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 26: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 27: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 28: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 29: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 30: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 31: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 32: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 33: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 34: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach: pid=['3915'] sockets=['webview_devtools_remote_3915']
+   attach: version={'Android-Package': 'com.ilias.practiceroom', 'Browser': 'Chrome/113.0.5672.136', 'Protocol-Version': '1.3', 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; sdk_gphone64_x86_64 Build/UE1A.230829.050; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/113.0.5672.136 Mobile Safari/537.36', 'V8-Version': '11.3.244.11', 'WebKit-Version': '537.36 (@2d54072eb2f350d37f3f304c4ba0fafcddbd7e82)', 'webSocketDebuggerUrl': 'ws://127.0.0.1:9222/devtools/browser'} targets=['http://127.0.0.1:40339/']
+   attach attempt 35: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 36: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 37: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 38: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+   attach attempt 39: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
+Traceback (most recent call last):
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 789, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 725, in main
+    browser, page = connect()
+                    ^^^^^^^^^
+  File "/home/runner/work/Music/Music/tests/e2e/run_e2e.py", line 723, in connect
+    raise RuntimeError(f"couldn't attach to the app's WebView: {last_err}")
+RuntimeError: couldn't attach to the app's WebView: ws://127.0.0.1:9222/devtools/browser: Error: BrowserType.connect_over_cdp: Protocol error (Browser.setDownloadBehavior): Browser context management is not supported.
+Call log:
+  - <ws connecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws connected> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnecting> ws://127.0.0.1:9222/devtools/browser
+  - <ws disconnected> ws://127.0.0.1:9222/devtools/browser code=1006 reason=
+
