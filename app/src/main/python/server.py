@@ -187,9 +187,69 @@ def pages_from_upload(src: Path, workdir: Path) -> list[Path]:
     return out
 
 
+def clean_homr_xml(path: Path) -> None:
+    """Fix structural quirks in homr's MusicXML, in place.
+
+    * Start-repeats come out on the right edge of the bar they start;
+      MusicXML wants them on its left edge, or players show an end-repeat.
+    * A start-repeat at the beginning of a line produces an extra bar with no
+      notes at all; drop such bars (real empty bars always contain a rest).
+    * The final barline is written heavy-heavy instead of light-heavy.
+    """
+    import xml.etree.ElementTree as ET
+    tree = ET.parse(path)
+    root = tree.getroot()
+    for part in root.findall("part"):
+        measures = part.findall("measure")
+        # 1) move forward repeats to the left edge of the same bar
+        for meas in measures:
+            for bl in list(meas.findall("barline")):
+                rep = bl.find("repeat")
+                if bl.get("location", "right") == "right" and rep is not None and rep.get("direction") == "forward":
+                    meas.remove(bl)
+                    left = ET.Element("barline", {"location": "left"})
+                    ET.SubElement(left, "bar-style").text = "heavy-light"
+                    ET.SubElement(left, "repeat", {"direction": "forward"})
+                    first_music = next((i for i, el in enumerate(meas) if el.tag not in ("print", "attributes")), len(meas))
+                    meas.insert(first_music, left)
+        # 2) drop bars without notes, carrying their layout/attributes into the next bar
+        measures = part.findall("measure")
+        for i, meas in enumerate(measures):
+            if meas.find("note") is not None or i + 1 >= len(measures):
+                continue
+            nxt = measures[i + 1]
+            carry = [el for el in meas if el.tag in ("print", "attributes")]
+            for el in reversed(carry):
+                if el.tag == "print" and nxt.find("print") is not None:
+                    continue
+                nxt.insert(0, el)
+            for bl in meas.findall("barline"):
+                rep = bl.find("repeat")
+                if rep is not None and rep.get("direction") == "backward":
+                    # an end-repeat on a phantom bar belongs to the previous real bar
+                    if i > 0:
+                        measures[i - 1].append(bl)
+            part.remove(meas)
+        # 3) renumber, and make the last barline a normal final barline
+        measures = part.findall("measure")
+        for n, meas in enumerate(measures, 1):
+            meas.set("number", str(n))
+        if measures:
+            for bl in measures[-1].findall("barline"):
+                style = bl.find("bar-style")
+                if style is not None and style.text == "heavy-heavy" and bl.find("repeat") is None:
+                    style.text = "light-heavy"
+    tree.write(path, encoding="utf-8", xml_declaration=True)
+
+
 def merge_pages(xmls: list[Path], title: str) -> str:
     import music21 as m21
     import music
+    for x in xmls:
+        try:
+            clean_homr_xml(x)
+        except Exception:
+            traceback.print_exc()  # cleaning is best effort; the raw scan is still usable
     score = m21.converter.parse(str(xmls[0]))
     for x in xmls[1:]:
         nxt = m21.converter.parse(str(x))
@@ -207,6 +267,7 @@ def merge_pages(xmls: list[Path], title: str) -> str:
         score.insert(0, m21.metadata.Metadata())
     score.metadata.title = title
     score.metadata.movementName = title
+    score.metadata.composer = ""   # otherwise music21 writes "Music21" as the composer
     return music.to_xml(score)
 
 
