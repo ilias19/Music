@@ -140,6 +140,8 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setUpWebView() {
+        // The emulator build lets CI drive the page through Chrome DevTools (tests/e2e). Phones: off.
+        if (BuildConfig.FLAVOR == "emu") WebView.setWebContentsDebuggingEnabled(true)
         with(web.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true

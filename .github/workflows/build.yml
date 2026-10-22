@@ -88,7 +88,7 @@ jobs:
   emulator-test:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -96,6 +96,13 @@ jobs:
         with:
           name: apks
           path: dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the test driver
+        run: pip install playwright==1.56.0
 
       - name: Enable KVM
         run: |
@@ -111,8 +118,8 @@ jobs:
           target: google_apis
           ram-size: 4096M
           disk-size: 6G
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash tools/emulator_selftest.sh dist/PracticeRoom-*-x86_64.apk selftest-output
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim
+          script: bash tools/emulator_selftest.sh dist/PracticeRoom-*-x86_64.apk selftest-output && bash tools/emulator_e2e.sh selftest-output
 
       - name: Publish self-test output
         if: always()

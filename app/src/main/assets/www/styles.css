@@ -200,12 +200,12 @@ input[type=range] { accent-color: var(--accent); }
 /* ---------------------------------------------------------------- mixer -- */
 .mixer {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 15; max-height: 72%;
-  display: flex; flex-direction: column; background: var(--ink); color: var(--bg);
+  display: flex; flex-direction: column; background: #1f2a44; color: #f4efe6;  /* same in light and dark */
   border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.25);
 }
 .mixer-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 8px 18px; }
-.mixer-head h3 { font-size: 20px; color: var(--bg); }
-.mixer-head .icon-btn { color: var(--bg); }
+.mixer-head h3 { font-size: 20px; color: #f4efe6; }
+.mixer-head .icon-btn { color: #f4efe6; }
 .mixer-head .icon-btn:hover { background: rgba(255,255,255,.1); }
 .link-btn { background: none; border: 0; color: #6fd3c6; font-weight: 600; cursor: pointer; padding: 6px 0; font-size: 14px; min-width: 110px; text-align: left; }
 .mixer-tracks { overflow: auto; padding: 4px 14px 18px; display: flex; flex-direction: column; gap: 10px; }
@@ -234,7 +234,7 @@ input[type=range] { accent-color: var(--accent); }
   background: rgba(255,255,255,.16); color: inherit; min-width: 58px;
 }
 .track-btns button[aria-pressed=true] { background: #3cc8b4; color: #10302c; }
-.track-btns button[data-act=mute][aria-pressed=true] { background: var(--rec); color: #fff; }
+.track-btns button[data-act=mute][aria-pressed=true] { background: #c8553d; color: #fff; }
 #mixer-btn.has-changes::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rec); margin-left: 6px; vertical-align: middle; }
 
 .toast {

@@ -308,6 +308,31 @@ const Sound = (() => {
   return { init, note, click, setTrack, silence, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; } };
 })();
 
+// Many files repeat the title as the movement title; OSMD would print it twice.
+function dropDuplicateSubtitle(o) {
+  const sh = o.Sheet;
+  const t = sh?.Title?.text?.trim(), st = sh?.Subtitle?.text?.trim();
+  if (t && st && t.toLowerCase() === st.toLowerCase()) sh.Subtitle = undefined;
+}
+
+// A long title is centred on the page and can run off both edges on a phone: shrink it to fit.
+const TITLE_HEIGHT = 4;   // OSMD's default SheetTitleHeight
+function fitTitle(o, box) {
+  const rules = o.EngravingRules;
+  if (!rules) return;
+  const title = o.Sheet?.Title?.text;
+  const find = () => [...box.querySelectorAll("svg text")].find((t) => t.textContent === title);
+  if (rules.SheetTitleHeight !== TITLE_HEIGHT) { rules.SheetTitleHeight = TITLE_HEIGHT; o.render(); }
+  for (let i = 0; i < 3 && title; i++) {
+    const el = find(), svg = box.querySelector("svg");
+    if (!el || !svg) return;
+    const tw = el.getBoundingClientRect().width, sw = svg.getBoundingClientRect().width;
+    if (tw <= sw * 0.94) return;
+    rules.SheetTitleHeight = Math.max(1.6, rules.SheetTitleHeight * (sw * 0.9) / tw);
+    o.render();
+  }
+}
+
 // ================================================================ PLAYER ==
 const Player = (() => {
   let osmd = null, sid = null, meta = null;
@@ -342,6 +367,7 @@ const Player = (() => {
     $("#score-title").textContent = meta.title;
     document.title = `${meta.title} · Practice Room`;
     $("#compare-btn").hidden = !meta.page_count;
+    $("#side-compare").hidden = !meta.page_count;
     updateMeta();
     $("#tr-out").textContent = fmtSemis(semitones);
     await loadXml(true);
@@ -359,10 +385,10 @@ const Player = (() => {
       });
     }
     await osmd.load(xml);
-    osmd.zoom = parseFloat($("#zoom").value);
-    osmd.render();
+    dropDuplicateSubtitle(osmd);
+    renderScore();
     buildTimeline();
-    if (applyHidden()) osmd.render();
+    if (applyHidden()) renderScore();
     if (first) {
       scoreBpm = Math.round(osmd.Sheet.DefaultStartTempoInBpm || meta.info?.tempo || 100);
       setTempo(scoreBpm);
@@ -370,6 +396,25 @@ const Player = (() => {
     renderMixer();
     afterRender();
     $("#loading").hidden = true;
+  }
+
+  // Render at the chosen zoom, shrinking it if the score would be wider than the screen
+  // (part names and dense bars can't fit a phone at 100%, and the page would scroll sideways).
+  function renderScore() {
+    const box = $("#osmd");
+    let zoom = parseFloat($("#zoom").value) || 1;
+    osmd.zoom = zoom;
+    osmd.render();
+    for (let i = 0; i < 3; i++) {
+      const svg = box.querySelector("svg");
+      const avail = box.clientWidth;
+      const need = Math.max(box.scrollWidth, svg ? svg.getBoundingClientRect().width : 0);
+      if (!avail || need <= avail + 2) break;
+      zoom = Math.max(0.35, zoom * (avail / need) * 0.98);
+      osmd.zoom = zoom;
+      osmd.render();
+    }
+    fitTitle(osmd, box);
   }
 
   function afterRender() {
@@ -556,7 +601,7 @@ const Player = (() => {
   async function setHidden(list, hidden) {
     list.forEach((t) => { t.hidden = hidden; saveTrack(t); });
     applyHidden();
-    osmd.render();
+    renderScore();
     afterRender();
     renderMixer();
   }
@@ -645,7 +690,8 @@ const Player = (() => {
         }
       }
     }
-    $("#pos").textContent = `Bar ${measures[st.measure]?.number ?? 1}`;
+    const num = measures[st.measure]?.number ?? 1;
+    $("#pos").textContent = num === 0 ? "Pickup" : `Bar ${num}`;
   }
 
   // ------------------------------------------------------ transport --
@@ -932,7 +978,7 @@ const Player = (() => {
   $("#paper-scroll").addEventListener("scroll", pressCancel, { passive: true });
   $("#back").addEventListener("click", () => (location.hash = "#/"));
   $("#side-btn").addEventListener("click", () => { $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true; });
-  $("#zoom").addEventListener("change", (e) => { osmd.zoom = +e.target.value; osmd.render(); afterRender(); });
+  $("#zoom").addEventListener("change", () => { renderScore(); afterRender(); });
   $("#mixer-btn").addEventListener("click", () => {
     const m = $("#mixer"); m.hidden = !m.hidden;
     $("#mixer-btn").setAttribute("aria-pressed", String(!m.hidden));
@@ -995,6 +1041,7 @@ const Player = (() => {
         drawTitle: true, drawComposer: true, drawPartNames: true,
       });
       await pdfOsmd.load(xml);
+      dropDuplicateSubtitle(pdfOsmd);
       pdfOsmd.render();
       const pages = [...holder.querySelectorAll("svg")];
       if (!pages.length) throw new Error("Nothing to print");
@@ -1018,6 +1065,7 @@ const Player = (() => {
     }
     c.hidden = !c.hidden;
   });
+  $("#side-compare").addEventListener("click", () => $("#compare-btn").click());
   $("#compare-close").addEventListener("click", () => { $("#compare").hidden = true; });
   $("#score-title").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); e.target.blur(); } });
   $("#score-title").addEventListener("blur", async (e) => {
@@ -1051,13 +1099,25 @@ const Player = (() => {
       if (!osmd || !w || Math.abs(w - lastW) < 8) return;
       lastW = w;
       clearTimeout(resizeT);
-      resizeT = setTimeout(() => { osmd.render(); afterRender(); }, 200);
+      resizeT = setTimeout(() => { renderScore(); afterRender(); }, 200);
     });
     ro.observe($("#paper"));
   }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(true); });
 
-  return { open, close, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ,
+  // Screen rectangle of bar i (0-based), for tests and debugging.
+  function barRect(i) {
+    const r = measureBox(i); if (!r) return null;
+    const p = $("#paper").getBoundingClientRect();
+    return { x: p.left + r.x, y: p.top + r.y, w: r.w, h: r.h };
+  }
+  function scrollToBar(i) {
+    const r = barRect(i); if (!r) return;
+    const sc = $("#paper-scroll"), sr = sc.getBoundingClientRect();
+    sc.scrollTop += r.y - sr.top - 30;
+  }
+
+  return { open, close, barRect, scrollToBar, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ,
     tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden })) }; } };
 })();
 

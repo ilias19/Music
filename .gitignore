@@ -14,3 +14,6 @@ app/src/main/assets/www/samples/
 # Signing keys never go in the repo
 *.jks
 *.keystore
+
+# e2e test output
+tests/e2e/out/
