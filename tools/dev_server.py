@@ -16,7 +16,31 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "app/src/main/python"))
 
 
+_OCR_CHILD = """
+import json, sys
+try:
+    from rapidocr import RapidOCR
+except ImportError:
+    print("[]"); sys.exit()
+import logging; logging.disable(logging.CRITICAL)
+r = RapidOCR()(sys.argv[1], return_word_box=True)
+out = []
+for line in (r.word_results or []):
+    for text, score, box in line:
+        xs = [float(p[0]) for p in box]; ys = [float(p[1]) for p in box]
+        out.append({"t": text, "x0": min(xs), "y0": min(ys), "x1": max(xs), "y1": max(ys)})
+print(json.dumps(out))
+"""
+
+
 class DesktopPlatform:
+    def ocr(self, png: str) -> str:
+        """RapidOCR stands in for ML Kit on a computer (pip install rapidocr). It runs in a
+        child process because this one has the onnxruntime shim in place of the real package."""
+        import subprocess
+        r = subprocess.run([sys.executable, "-I", "-c", _OCR_CHILD, png], capture_output=True, text=True, timeout=300)
+        return r.stdout.strip() or "[]"
+
     def renderPdf(self, pdf: str, out_dir: str, dpi: int):
         import fitz
         out = []

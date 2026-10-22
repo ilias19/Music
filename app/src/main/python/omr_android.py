@@ -21,6 +21,7 @@ import cv2
 
 _ready = False
 _lock = threading.Lock()
+_geometry: dict = {}
 
 SEGNET = "segnet_308-3296ccd40960f90ca6ab9c035cca945675d30a0f.onnx"
 ENCODER = "encoder_pytorch_model_396-f6feedb42ff90087d898b0941a55d040fa6b2903.onnx"
@@ -110,11 +111,23 @@ def setup(bridge, models_dir: str) -> None:
         seg_inf.segnet_path_onnx = seg_path
         import homr.main as hm
         hm.segnet_path_onnx = seg_path
+
+        # keep homr's staff/notehead geometry of the page being scanned (for lyrics placement)
+        orig_parse = hm.parse_staffs
+
+        def parse_staffs(debug, staffs, image, config, selected_staff=-1):
+            _geometry["staffs"] = staffs
+            _geometry["width"] = int(image.shape[1])
+            return orig_parse(debug, staffs, image, config, selected_staff)
+
+        hm.parse_staffs = parse_staffs
         _ready = True
 
 
-def scan_page(png_path: str) -> str:
-    """Recognise one page image. Returns the MusicXML path."""
+def scan_page(png_path: str, ocr=None) -> str:
+    """Recognise one page image. Returns the MusicXML path.
+
+    ocr(png_path) -> list of lyrics.Word, if given, adds lyrics, chord symbols and tempo."""
     if not _ready:
         raise RuntimeError("omr_android.setup() was not called")
     from homr.main import ProcessingConfig, process_image
@@ -122,8 +135,19 @@ def scan_page(png_path: str) -> str:
 
     config = ProcessingConfig(False, False, False, False, -1, False, False, False)
     with _lock:  # one scan at a time: the models are big
+        _geometry.clear()
         process_image(png_path, config, XmlGeneratorArguments(False, None, None))
-    xml = os.path.splitext(png_path)[0] + ".musicxml"
-    if not os.path.exists(xml):
-        raise RuntimeError("No music found on this page")
+        xml = os.path.splitext(png_path)[0] + ".musicxml"
+        if not os.path.exists(xml):
+            raise RuntimeError("No music found on this page")
+        if ocr is not None and _geometry.get("staffs"):
+            try:
+                import lyrics
+                from PIL import Image
+                words = ocr(png_path)
+                stats = lyrics.annotate(xml, _geometry["staffs"], _geometry["width"], Image.open(png_path).size[0], words)
+                print("text on page:", stats, flush=True)
+            except Exception:
+                import traceback
+                traceback.print_exc()   # notes are still fine without the text
     return xml

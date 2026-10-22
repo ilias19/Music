@@ -53,7 +53,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 600; letter-spacing: -.01em
   width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%;
   border: 0; background: transparent; cursor: pointer; flex: none;
 }
-.icon-btn:hover { background: var(--accent-soft); }
+.icon-btn:hover, .icon-btn[aria-pressed="true"] { background: var(--accent-soft); }
 .icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -242,6 +242,27 @@ input[type=range] { accent-color: var(--accent); }
 .track-btns button[aria-pressed=true] { background: #3cc8b4; color: #10302c; }
 .track-btns button[data-act=mute][aria-pressed=true] { background: #c8553d; color: #fff; }
 #mixer-btn.has-changes::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rec); margin-left: 6px; vertical-align: middle; }
+
+/* ---- zoom sheet ---- */
+.zoom-sheet {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 16;
+  display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-radius: 16px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
+}
+.zoom-lbl { font-weight: 600; margin-right: 6px; }
+.zoom-step { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--line); font-size: 22px; cursor: pointer; color: var(--ink); }
+.zoom-step:active { transform: scale(.95); }
+#zoom-val { min-width: 54px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.zoom-reset { min-width: 0; color: var(--accent); }
+#paper { transition: none; will-change: transform; }
+
+/* typed tempo looks like the old number until you tap it */
+#tempo-out {
+  width: 52px; text-align: center; font: inherit; font-weight: 600; color: inherit; background: transparent;
+  border: 1px solid transparent; border-radius: 8px; padding: 3px 2px; -moz-appearance: textfield;
+}
+#tempo-out::-webkit-outer-spin-button, #tempo-out::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#tempo-out:hover, #tempo-out:focus { border-color: var(--line); background: var(--bg); outline: none; }
 
 .toast {
   position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); background: var(--ink); color: var(--bg);

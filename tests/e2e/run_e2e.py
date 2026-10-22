@@ -97,7 +97,9 @@ class App:
 
     def open(self, title: str):
         self.library()
-        self.page.locator(".card", has_text=title).first.click()
+        card = self.page.locator(".card:not(.busy)", has_text=title).first
+        card.wait_for(timeout=15000)   # the grid refreshes every 2 s while a scan runs
+        card.click()
         self.wait_loaded()
 
     def wait_loaded(self, timeout=60000):
@@ -274,6 +276,13 @@ def lead_sheet_scan(app: App):
     app.upload("lead_sheet.jpg")
     s = app.wait_card("lead sheet")
     check("real lead-sheet screenshot scans", s["status"] == "ready" and s["info"]["measures"] == 80, f"{s['info']} in {s['_seconds']} s")
+    app.open("lead sheet")
+    st = app.state()
+    check("lead sheet keeps its lyrics", st["lyrics"] >= 100, f"{st['lyrics']} syllables")
+    check("lead sheet keeps its chord symbols", st["chords"] >= 2, f"{st['chords']} chords")
+    check("lead sheet tempo is read from the page (150)", st["bpm"] == 150, f"{st['bpm']} bpm")
+    n = app.page.locator("#osmd text", has_text=re.compile(r"^\w{2,}$")).count()
+    check("lyrics are drawn under the notes", n >= 50, f"{n} words drawn")
 
 
 @section
@@ -463,12 +472,59 @@ def display(app: App):
     app.open("Chorale BWV 66.6 (Bach)")
     app.page.click("#side-btn")
     check("side panel opens", app.page.is_visible("#side"))
+    app.page.click("#side-btn")
     w0 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    app.page.evaluate("""() => { const z = document.querySelector('#zoom'); z.value = 1.4; z.dispatchEvent(new Event('change', {bubbles: true})); }""")
-    app.page.wait_for_timeout(800)
+    app.page.click("#zoom-btn")
+    check("zoom control opens", app.page.is_visible("#zoom-sheet") and app.page.inner_text("#zoom-val") == "100%", app.page.inner_text("#zoom-val"))
+    for _ in range(4):
+        app.page.click("#zoom-in"); app.page.wait_for_timeout(300)
+    app.page.wait_for_timeout(500)
     w1 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    check("zoom makes the score bigger", w1 > w0 * 1.15, f"{w0:.0f} -> {w1:.0f} px")
-    app.page.evaluate("""() => { const z = document.querySelector('#zoom'); z.value = 1; z.dispatchEvent(new Event('change', {bubbles: true})); }""")
+    check("zoom + makes the score bigger", w1 > w0 * 1.15 and app.page.inner_text("#zoom-val") == "140%", f"{w0:.0f} -> {w1:.0f} px, {app.page.inner_text('#zoom-val')}")
+    sw = app.page.evaluate("document.querySelector('#paper-scroll').scrollWidth - document.querySelector('#paper-scroll').clientWidth")
+    check("zoomed score doesn't scroll sideways", sw <= 2, f"{sw} px")
+    for _ in range(7):
+        app.page.click("#zoom-out"); app.page.wait_for_timeout(250)
+    app.page.wait_for_timeout(500)
+    w2 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
+    check("zoom − makes it smaller", w2 < w0 * 0.9 and app.page.inner_text("#zoom-val") == "70%", f"{w0:.0f} -> {w2:.0f} px")
+    app.open("Ode to Joy (Beethoven)")
+    check("zoom is remembered for other scores", abs(app.state()["zoom"] - 0.7) < 0.01, str(app.state()["zoom"]))
+    check("zoom % shows the remembered value", app.page.inner_text("#zoom-val") == "70%", app.page.inner_text("#zoom-val"))
+    app.page.click("#zoom-btn")
+    pinched = app.page.evaluate("""async () => {
+        const el = document.querySelector('#paper-scroll'), r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + 200;
+        const mk = (id, x) => new Touch({ identifier: id, target: el, clientX: x, clientY: cy });
+        const fire = (type, list) => el.dispatchEvent(new TouchEvent(type, { touches: list, changedTouches: list, bubbles: true, cancelable: true }));
+        let a = mk(1, cx - 50), b = mk(2, cx + 50);
+        fire('touchstart', [a, b]);
+        for (let k = 1; k <= 5; k++) { a = mk(1, cx - 50 - 10 * k); b = mk(2, cx + 50 + 10 * k); fire('touchmove', [a, b]); }
+        fire('touchend', []);
+        await new Promise((r) => setTimeout(r, 800));
+        return Player.state.zoom; }""")
+    check("pinching out zooms in", 1.3 <= pinched <= 1.45, f"0.7 -> {pinched}")
+    app.page.click("#zoom-reset")
+    app.page.wait_for_timeout(500)
+    check("Fit resets zoom to 100%", app.page.inner_text("#zoom-val") == "100%" and app.state()["zoom"] == 1)
+    app.page.click("#zoom-btn")
+    check("zoom control closes", not app.page.is_visible("#zoom-sheet"))
+
+    # typed tempo
+    app.page.click("#tempo-out")
+    app.page.fill("#tempo-out", "137")
+    app.page.keyboard.press("Enter")
+    app.page.wait_for_timeout(200)
+    check("typed tempo is applied", app.state()["bpm"] == 137 and app.page.input_value("#tempo") == "137", str(app.state()["bpm"]))
+    app.page.fill("#tempo-out", "999"); app.page.keyboard.press("Enter"); app.page.wait_for_timeout(200)
+    check("typed tempo is clamped", app.state()["bpm"] == 220 and app.page.input_value("#tempo-out") == "220", str(app.state()["bpm"]))
+    app.page.fill("#tempo-out", ""); app.page.keyboard.press("Enter"); app.page.wait_for_timeout(200)
+    check("empty tempo keeps the old value", app.page.input_value("#tempo-out") == "220")
+    app.page.click("#tempo-out"); app.page.keyboard.press("Space"); app.page.wait_for_timeout(300)
+    check("typing in tempo box doesn't start playback", not app.state()["playing"])
+    app.set_tempo(100)
+    app.open("Chorale BWV 66.6 (Bach)")
+    app.page.click("#side-btn")
     app.page.click("#side-btn")
     title = app.page.locator("#osmd text", has_text="Chorale").count()
     check("score title is drawn once", title == 1, f"{title}")

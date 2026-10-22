@@ -17,3 +17,4 @@ app/src/main/assets/www/samples/
 
 # e2e test output
 tests/e2e/out/
+app/src/main/python/homr/**/*.onnx

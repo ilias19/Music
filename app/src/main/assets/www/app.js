@@ -386,6 +386,9 @@ const Player = (() => {
   let metroOn = false, countIn = true;
   // Mixer: one track per part / voice, with chords split into melody (top note) and harmony.
   let tracks = [];          // [{ key, name, count, mute, solo, db, instrument, hidden, notes:[Note] }]
+  let xmlStats = { lyrics: 0, chords: 0 };
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5;
+  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom")) || 1; } catch { return 1; } })();
   let trackState = {};      // key -> saved settings, survives transposition
 
   // transport state
@@ -400,6 +403,7 @@ const Player = (() => {
 
   // ---------------------------------------------------------- loading --
   async function open(id) {
+    $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
     if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; tracks = []; trackState = {}; playIntro = false; }
     sid = id;
     $("#loading").hidden = false;
@@ -429,6 +433,7 @@ const Player = (() => {
         followCursor: false, cursorsOptions: [{ type: 0, color: "#2f6f6a", alpha: 0.35, follow: false }],
       });
     }
+    xmlStats = { lyrics: (xml.match(/<lyric[\s>]/g) || []).length, chords: (xml.match(/<harmony[\s>]/g) || []).length };
     await osmd.load(xml);
     dropDuplicateSubtitle(osmd);
     renderScore();
@@ -447,7 +452,7 @@ const Player = (() => {
   // (part names and dense bars can't fit a phone at 100%, and the page would scroll sideways).
   function renderScore() {
     const box = $("#osmd");
-    let zoom = parseFloat($("#zoom").value) || 1;
+    let zoom = userZoom;
     osmd.zoom = zoom;
     osmd.render();
     for (let i = 0; i < 3; i++) {
@@ -847,7 +852,7 @@ const Player = (() => {
     v = Math.max(30, Math.min(220, Math.round(v)));
     if (playing) { const now = Tone.now(); const q = qAt(now); anchorQ = Math.max(q, anchorQ); anchorT = Math.max(now, anchorT); }
     bpm = v;
-    $("#tempo").value = v; $("#tempo-out").textContent = v;
+    $("#tempo").value = v; $("#tempo-out").value = v;
   }
 
   // ------------------------------------------------------ practice --
@@ -995,7 +1000,8 @@ const Player = (() => {
     if (rec) rec.stop();
     flush();
     clearInterval(tick);
-    $("#side").hidden = true; $("#compare").hidden = true; $("#mixer").hidden = true;
+    $("#side").hidden = true; $("#compare").hidden = true; $("#mixer").hidden = true; $("#zoom-sheet").hidden = true;
+    $("#zoom-btn").setAttribute("aria-pressed", "false");
     $("#mixer-btn").setAttribute("aria-pressed", "false");
   }
 
@@ -1024,8 +1030,59 @@ const Player = (() => {
   $("#paper-scroll").addEventListener("scroll", pressCancel, { passive: true });
   $("#back").addEventListener("click", () => (location.hash = "#/"));
   $("#side-btn").addEventListener("click", () => { $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true; });
-  $("#zoom").addEventListener("change", () => { renderScore(); afterRender(); });
+  // ---- zoom: buttons, typed-in steps and pinch; remembered on this device ----
+  function setZoom(z, rerender = true) {
+    userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 20) / 20;   // 5% steps
+    $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
+    try { localStorage.setItem("pr.zoom", String(userZoom)); } catch {}
+    if (rerender && osmd) { renderScore(); afterRender(); }
+  }
+  $("#zoom-btn").addEventListener("click", () => {
+    const z = $("#zoom-sheet"); z.hidden = !z.hidden;
+    $("#zoom-btn").setAttribute("aria-pressed", String(!z.hidden));
+    $("#mixer").hidden = true; $("#mixer-btn").setAttribute("aria-pressed", "false");
+  });
+  $("#zoom-in").addEventListener("click", () => setZoom(userZoom + 0.1));
+  $("#zoom-out").addEventListener("click", () => setZoom(userZoom - 0.1));
+  $("#zoom-reset").addEventListener("click", () => setZoom(1));
+
+  // pinch: scale the page live with CSS, re-engrave at the new size when the fingers lift
+  // Touch events (not pointer events): they keep firing even after the page starts scrolling.
+  let pinch = null;
+  const paperEl = $("#paper"), scrollEl = $("#paper-scroll");
+  const gap = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  scrollEl.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) { pinch = { d0: gap(e.touches) || 1, z0: userZoom, scale: 1 }; pressCancel(); }
+  }, { passive: true });
+  scrollEl.addEventListener("touchmove", (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault();
+    pinch.scale = Math.max(ZOOM_MIN / pinch.z0, Math.min(ZOOM_MAX / pinch.z0, gap(e.touches) / pinch.d0));
+    paperEl.style.transformOrigin = "50% 0";
+    paperEl.style.transform = `scale(${pinch.scale})`;
+    $("#zoom-val").textContent = `${Math.round(pinch.z0 * pinch.scale * 100)}%`;
+  }, { passive: false });
+  const endPinch = (e) => {
+    if (!pinch || e.touches.length >= 2) return;
+    const z = pinch.z0 * pinch.scale;
+    pinch = null;
+    paperEl.style.transform = "";
+    if (Math.abs(z - userZoom) > 0.02) setZoom(z);
+  };
+  scrollEl.addEventListener("touchend", endPinch);
+  scrollEl.addEventListener("touchcancel", endPinch);
+
+  // ---- typed tempo ----
+  const tempoBox = $("#tempo-out");
+  const commitTempo = () => {
+    const v = parseInt(tempoBox.value, 10);
+    if (Number.isFinite(v)) setTempo(v); else tempoBox.value = bpm;
+  };
+  tempoBox.addEventListener("change", commitTempo);
+  tempoBox.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); tempoBox.blur(); } });
+  tempoBox.addEventListener("focus", () => tempoBox.select());
   $("#mixer-btn").addEventListener("click", () => {
+    $("#zoom-sheet").hidden = true; $("#zoom-btn").setAttribute("aria-pressed", "false");
     const m = $("#mixer"); m.hidden = !m.hidden;
     $("#mixer-btn").setAttribute("aria-pressed", String(!m.hidden));
   });
@@ -1121,7 +1178,7 @@ const Player = (() => {
     document.title = `${meta.title} · Practice Room`;
   });
   document.addEventListener("keydown", (e) => {
-    if ($("#player").hidden || e.target.matches("input:not([type=range]):not([type=checkbox]), [contenteditable=true], textarea")) return;
+    if ($("#player").hidden || e.target.matches("input:not([type=range]):not([type=checkbox]), [contenteditable=true], textarea, select")) return;
     if (e.code === "Space") { e.preventDefault(); if (!e.repeat) playing ? pause() : play(); }
     else if (e.key === "Home") { pause(loop.on ? loopStart() : 0); }
     else if (e.key === "l" || e.key === "L") toggleLoop();
@@ -1163,7 +1220,7 @@ const Player = (() => {
     sc.scrollTop += r.y - sr.top - 30;
   }
 
-  return { open, close, barRect, scrollToBar, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ,
+  return { open, close, barRect, scrollToBar, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ, zoom: userZoom, ...xmlStats,
     tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden })) }; } };
 })();
 

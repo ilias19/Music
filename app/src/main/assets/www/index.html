@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Practice Room</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%231f2a44'/><path d='M12 22a3 3 0 1 1-2-2.8V8l12-3v12a3 3 0 1 1-2-2.8V8.6l-8 2V22z' fill='%23f4efe6'/></svg>">
 <link rel="stylesheet" href="vendor/fonts/fonts.css">
@@ -61,6 +61,9 @@
     <div class="top-right">
       <span class="timer" id="timer" title="Practice time this session">0:00</span>
       <button class="btn small" id="compare-btn" hidden>Original scan</button>
+      <button class="icon-btn" id="zoom-btn" aria-pressed="false" aria-label="Zoom" title="Zoom (or pinch the score)">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5M8 10.5h5M10.5 8v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <div class="menu-wrap">
         <button class="btn small" id="export-btn" aria-haspopup="true">Export</button>
         <div class="menu" id="export-menu" hidden>
@@ -93,11 +96,15 @@
       <div class="side-block" id="side-compare-block">
         <button class="btn small" id="side-compare" hidden>Compare with the original scan</button>
       </div>
-      <div class="side-block">
-        <h3>Display</h3>
-        <label class="row-lbl">Zoom <input type="range" id="zoom" min="0.5" max="1.6" step="0.05" value="1"></label>
-      </div>
     </aside>
+
+    <section class="zoom-sheet" id="zoom-sheet" hidden aria-label="Zoom">
+      <span class="zoom-lbl">Zoom</span>
+      <button class="zoom-step" id="zoom-out" aria-label="Zoom out">−</button>
+      <output id="zoom-val">100%</output>
+      <button class="zoom-step" id="zoom-in" aria-label="Zoom in">+</button>
+      <button class="link-btn zoom-reset" id="zoom-reset">Fit</button>
+    </section>
 
     <section class="mixer" id="mixer" hidden aria-label="Mixer">
       <div class="mixer-head">
@@ -134,7 +141,7 @@
       <label class="ctl" title="Tempo">
         <span class="ctl-lbl">Tempo</span>
         <input type="range" id="tempo" min="30" max="220" value="100">
-        <output id="tempo-out">100</output>
+        <input id="tempo-out" type="number" inputmode="numeric" min="30" max="220" value="100" aria-label="Tempo in beats per minute">
       </label>
       <div class="ctl" title="Transpose (semitones)">
         <span class="ctl-lbl">Key</span>

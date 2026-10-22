@@ -242,6 +242,16 @@ def clean_homr_xml(path: Path) -> None:
     tree.write(path, encoding="utf-8", xml_declaration=True)
 
 
+def page_text(png_path: str):
+    """Words on a page with their boxes, from the platform's OCR (ML Kit on Android)."""
+    import lyrics
+    ocr = getattr(S["platform"], "ocr", None)
+    if ocr is None:
+        return []
+    raw = json.loads(str(ocr(png_path)) or "[]")
+    return [lyrics.Word(w["t"], w["x0"], w["y0"], w["x1"], w["y1"]) for w in raw if w.get("t")]
+
+
 def merge_pages(xmls: list[Path], title: str) -> str:
     import music21 as m21
     import music
@@ -289,7 +299,7 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
             update_score(sid, message=f"Reading page {i + 1} of {len(pages)}",
                          progress=round(0.08 + 0.85 * i / len(pages), 3))
             try:
-                xmls.append(Path(omr_android.scan_page(str(p))))
+                xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text)))
             except Exception as e:
                 traceback.print_exc()
                 errors.append(f"page {i + 1}: {e}")
