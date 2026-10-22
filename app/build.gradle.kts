@@ -77,7 +77,7 @@ chaquopy {
         version = "3.10"
         System.getenv("PR_BUILD_PYTHON")?.let { buildPython(it) }
         // homr, tokenizers and music21 read data files next to their modules
-        extractPackages("homr", "music21")
+        extractPackages("homr", "music21", "pdfminer")
         pip {
             // Dependencies are listed explicitly so nothing heavy (matplotlib) or
             // unavailable (onnxruntime: replaced by the native bridge) gets pulled in.
@@ -98,6 +98,7 @@ chaquopy {
             install("idna==3.20")
             install("certifi==2026.10.19")
             install("charset-normalizer==3.5.2")
+            install("pdfminer.six==20250506")  // lyrics, chords and tempo from a PDF's own text
             // Native libraries Chaquopy's binary wheels link against (skipped by --no-deps)
             install("chaquopy-libjpeg")      // Pillow
             install("chaquopy-libpng")       // Pillow

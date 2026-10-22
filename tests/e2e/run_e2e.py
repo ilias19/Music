@@ -254,6 +254,11 @@ def scanning(app: App, android: bool):
     app.upload("bach_chorale.pdf")
     s = app.wait_card("bach chorale")
     check("PDF scan succeeds with 4 parts", s["status"] == "ready" and s["info"]["parts"] == 4, f"{s['info']} in {s['_seconds']} s")
+    src = [p.get("text_from") for p in (s["info"].get("scan_log") or {}).get("pages", [])]
+    check("a PDF's own text is used (no OCR)", src == ["pdf"], str(src))
+    app.open("bach chorale")
+    names = [t["name"] for t in app.state()["tracks"]]
+    check("part names are read from the page", {"Soprano", "Alto", "Tenor", "Bass"} <= {n.split(" · ")[0] for n in names}, str(names))
 
     app.library()
     app.upload("no_music.jpg")

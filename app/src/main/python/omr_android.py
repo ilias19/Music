@@ -130,6 +130,7 @@ def setup(bridge, models_dir: str) -> None:
         orig_parse = hm.parse_staffs
 
         def parse_staffs(debug, staffs, image, config, selected_staff=-1):
+            staffs = regroup_systems(staffs)
             _geometry["staffs"] = staffs
             _geometry["width"] = int(image.shape[1])
             _geometry["total"] = max(1, sum(len(s.staffs) for s in staffs))
@@ -154,6 +155,52 @@ def setup(bridge, models_dir: str) -> None:
 
         sp.parse_staff_image = parse_staff_image
         _ready = True
+
+
+def regroup_systems(multi: list) -> list:
+    """Group staves into systems by spacing when homr's brace/bracket detection didn't.
+
+    homr joins the staves of a system (choir SATB, piano) using the brace or bracket on
+    the left. When it misses some, e.g. a guitar staff outside the choir's bracket on the
+    first page, the systems come out with different sizes and homr falls back to reading
+    every staff as one long single line, which mixes all the voices together.
+
+    Staves inside a system are much closer together than systems are. If the gaps
+    between staves split cleanly into small and large, and every resulting group has
+    the same number of staves, use those groups.
+    """
+    from homr.model import MultiStaff
+    sizes = {len(m.staffs) for m in multi}
+    if len(multi) < 2 or (len(sizes) == 1 and sizes != {1}):
+        return multi          # already consistent (or a single system): leave it to homr
+    staves = sorted((s for m in multi for s in m.staffs), key=lambda s: s.min_y)
+    if len(staves) < 4:
+        return multi
+    gaps = [b.min_y - a.max_y for a, b in zip(staves, staves[1:])]
+    ordered = sorted(gaps)
+    # the biggest relative jump in the sorted gaps separates "inside a system" from "between systems"
+    best, cut = 0.0, None
+    for lo, hi in zip(ordered, ordered[1:]):
+        ratio = hi / max(lo, 1.0)
+        if ratio > best:
+            best, cut = ratio, hi
+    # homr found multi-staff systems but of different sizes: a clear gap is enough. If it found
+    # only single staves (a lead sheet looks like that too) ask for a much clearer one.
+    if cut is None or best < (2.5 if sizes == {1} else 1.8):
+        return multi
+    groups, cur = [], [staves[0]]
+    for gap, staff in zip(gaps, staves[1:]):
+        if gap >= cut:
+            groups.append(cur)
+            cur = []
+        cur.append(staff)
+    groups.append(cur)
+    k = len(groups[0])
+    if k < 2 or len(groups) < 2 or any(len(g) != k for g in groups):
+        return multi
+    print(f"Grouped {len(staves)} staves into {len(groups)} systems of {k} by spacing "
+          f"(homr had {[len(m.staffs) for m in multi]})", flush=True)
+    return [MultiStaff(g, []) for g in groups]
 
 
 def preload() -> None:

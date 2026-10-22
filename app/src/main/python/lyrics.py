@@ -22,7 +22,7 @@ CHORD_RE = re.compile(
     r"^([A-G])([#b♯♭]?)(maj7|maj9|maj|M7|m7b5|m7|m9|m6|m11|min|m|dim7|dim|°|ø|aug|\+|sus2|sus4|sus|add9|add2|7sus4|"
     r"6/9|69|6|7|9|11|13)?(?:\(?(b5|#5|b9|#9|#11|b13)\)?)?(?:/([A-G])([#b♯♭]?))?$")
 TEMPO_RE = re.compile(r"[=:\-\u2013\u2014]\s*(\d{2,3})\b")   # "= 120"; OCR sometimes reads "=" as ":" or "-"
-BARE_NUM_RE = re.compile(r"^[^\w]*[A-Za-z]?[^\w]*(\d{2,3})$")    # "J150", "150": the note glyph read as a letter, or lost
+BARE_NUM_RE = re.compile(r"^[Jjd\u2669]\s*(\d{2,3})$")    # "J150": the note glyph read as a letter, "=" lost
 WORDISH = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ'’]")
 # Performance markings printed in the same space as lyrics; a lone one is not a syllable.
 MARKINGS = {"p", "pp", "ppp", "mp", "mf", "f", "ff", "fff", "fp", "sf", "sfz", "sfp", "fz", "rf", "rfz",
@@ -80,6 +80,11 @@ def staff_geometry(multi_staffs, scale_words: float, words: list[Word]) -> list[
         for st in ms.staffs:
             unit = float(getattr(st, "average_unit_size", 0) or (st.max_y - st.min_y) / 4)
             heads = [n for n in st.get_notes() if st.min_y - 4.5 * unit <= n.center[1] <= st.max_y + 4.5 * unit]
+            # the note in a tempo mark ("♩ = 70") just above the staff is not a note of the music
+            marks = [w for w in words if w.text.lstrip().startswith("=") or TEMPO_RE.search(w.text)]
+            heads = [n for n in heads if not any(
+                abs(float(n.center[1]) - w.cy) < 2.0 * unit and w.x0 - 4.0 * unit < float(n.center[0]) < w.x0 + 0.5 * unit
+                for w in marks)]
             xs = sorted(float(n.center[0]) for n in heads)
             onsets: list[float] = []
             for x in xs:
@@ -96,7 +101,8 @@ def staff_geometry(multi_staffs, scale_words: float, words: list[Word]) -> list[
     # bands: below each staff up to (most of) the gap to the next staff; above the top staff of a system
     flat = [g for row in systems for g in row]
     for i, g in enumerate(flat):
-        nxt_top = flat[i + 1].top if i + 1 < len(flat) else g.bottom + 12 * g.unit
+        # the last staff on the page: lyrics sit close under it, the page footer further down
+        nxt_top = flat[i + 1].top if i + 1 < len(flat) else g.bottom + 5.5 * g.unit
         prev_bottom = flat[i - 1].bottom if i > 0 else max(0.0, g.top - 14 * g.unit)
         for w in words:
             if not (g.left - 2 * g.unit <= w.cx <= g.right + 2 * g.unit):
@@ -273,7 +279,8 @@ def annotate(xml_path: str, multi_staffs, homr_width: int, image_width: int, wor
     stats = {"lyrics": 0, "chords": 0, "tempo": None, "lines_matched": 0, "lines": 0}
     if not words or not multi_staffs:
         return stats
-    systems = staff_geometry(multi_staffs, homr_width / max(1, image_width), words)
+    scale_w = homr_width / max(1, image_width)
+    systems = staff_geometry(multi_staffs, scale_w, words)
     tree = ET.parse(xml_path)
     root = tree.getroot()
     parts = root.findall("part")
@@ -329,34 +336,66 @@ def annotate(xml_path: str, multi_staffs, homr_width: int, image_width: int, wor
                     meas.insert(list(meas).index(anchor) if anchor is not None else len(meas), h)
                     stats["chords"] += 1
 
-    # tempo "= 120" above the first system (OCR may split "=" and "120" into two words)
-    first = systems[0][0] if systems and systems[0] else None
-    if first is not None:
-        scale = homr_width / max(1, image_width)
-        ordered = sorted(words, key=lambda w: (round(w.cy / 8), w.x0))
-        candidates = [(w, w.text) for w in ordered]
-        for a, b in zip(ordered, ordered[1:]):
-            if abs(a.cy - b.cy) < (a.y1 - a.y0) and 0 <= b.x0 - a.x1 < 3 * (a.y1 - a.y0):
-                candidates.append((a, a.text + " " + b.text))
-        above = [w for w in ordered if w.cy * scale < first.top]
-        print("lyrics: text above the first staff:", [w.text for w in above][:20], flush=True)
-        # a lone number above the music, in the left half, is the tempo when no "=" was read
-        candidates += [(w, "=" + BARE_NUM_RE.match(w.text).group(1)) for w in above
-                       if BARE_NUM_RE.match(w.text) and w.x1 < image_width * 0.5]
+    # part names: the text left of each staff of the first system ("Soprano", "Guitare Classique"),
+    # and the short names left of the next one ("S.", "Guit.")
+    scaled = [Word(w.text, w.x0 * scale_w, w.y0 * scale_w, w.x1 * scale_w, w.y1 * scale_w) for w in words]
+    part_list = root.find("part-list")
+    score_parts = part_list.findall("score-part") if part_list is not None else []
+
+    def label(g: StaffGeom) -> str:
+        near = [w for w in scaled if w.x1 < g.left - 0.3 * g.unit and g.top - 1.5 * g.unit < w.cy < g.bottom + 1.5 * g.unit]
+        return " ".join(w.text for w in sorted(near, key=lambda w: w.x0)).strip()
+
+    for p_idx, sp in enumerate(score_parts):
+        if systems and p_idx < len(systems[0]):
+            name = label(systems[0][p_idx])
+            if name and not is_chord(name) and len(name) <= 40:
+                el = sp.find("part-name")
+                if el is None:
+                    el = ET.SubElement(sp, "part-name")
+                el.text = name
+                stats.setdefault("names", []).append(name)
+        if len(systems) > 1 and p_idx < len(systems[1]):
+            short = label(systems[1][p_idx])
+            if short and len(short) <= 12:
+                el = sp.find("part-abbreviation")
+                if el is None:
+                    el = ET.Element("part-abbreviation")
+                    pn = sp.find("part-name")
+                    sp.insert(list(sp).index(pn) + 1 if pn is not None else 0, el)
+                el.text = short
+
+    # tempo marks "♩ = 120" above any system (OCR may split "=" and "120" into two words, or read
+    # the note as "J"). Plain numbers are never taken: measure numbers sit in the same place.
+    scale = scale_w
+    ordered = sorted(words, key=lambda w: (round(w.cy / 8), w.x0))
+    candidates = [(w, w.text) for w in ordered]
+    for a, b in zip(ordered, ordered[1:]):
+        if abs(a.cy - b.cy) < (a.y1 - a.y0) and 0 <= b.x0 - a.x1 < 3 * (a.y1 - a.y0):
+            candidates.append((a, a.text + " " + b.text))
+    candidates += [(w, "=" + m.group(1)) for w in ordered if (m := BARE_NUM_RE.match(w.text))]
+    xml_systems0 = _notes_by_system(parts[0])
+    for s_idx, row in enumerate(systems):
+        if not row or s_idx >= len(xml_systems0) or not xml_systems0[s_idx]:
+            continue
+        top = row[0].top
+        floor = systems[s_idx - 1][-1].bottom if s_idx > 0 and systems[s_idx - 1] else -1e9
         for w, text in candidates:
             m = TEMPO_RE.search(text)
-            if m and w.cy * scale < first.top and 40 <= int(m.group(1)) <= 260:
-                bpm = int(m.group(1))
-                meas = parts[0].find("measure")
-                d = ET.Element("direction", {"placement": "above"})
-                dt = ET.SubElement(d, "direction-type")
-                mt = ET.SubElement(dt, "metronome")
-                ET.SubElement(mt, "beat-unit").text = "quarter"
-                ET.SubElement(mt, "per-minute").text = str(bpm)
-                ET.SubElement(d, "sound", {"tempo": str(bpm)})
-                first_note = meas.find("note")
-                meas.insert(list(meas).index(first_note) if first_note is not None else len(meas), d)
+            if not (m and floor < w.cy * scale < top and 40 <= int(m.group(1)) <= 260):
+                continue
+            bpm = int(m.group(1))
+            meas = xml_systems0[s_idx][0][0]
+            d = ET.Element("direction", {"placement": "above"})
+            dt = ET.SubElement(d, "direction-type")
+            mt = ET.SubElement(dt, "metronome")
+            ET.SubElement(mt, "beat-unit").text = "quarter"
+            ET.SubElement(mt, "per-minute").text = str(bpm)
+            ET.SubElement(d, "sound", {"tempo": str(bpm)})
+            first_note = meas.find("note")
+            meas.insert(list(meas).index(first_note) if first_note is not None else len(meas), d)
+            if stats["tempo"] is None:
                 stats["tempo"] = bpm
-                break
+            break
     tree.write(xml_path, encoding="utf-8", xml_declaration=True)
     return stats

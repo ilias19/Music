@@ -158,13 +158,15 @@ def pages_from_upload(src: Path, workdir: Path) -> list[Path]:
     from PIL import Image, ImageOps
     ext = src.suffix.lower()
     out: list[Path] = []
+    pdf_pages: list[tuple[Path, int]] = []
     if ext == ".pdf":
         tmp = workdir / f"pdf_{src.stem}"
         tmp.mkdir(exist_ok=True)
-        for p in S["platform"].renderPdf(str(src), str(tmp), 300):
+        for i, p in enumerate(S["platform"].renderPdf(str(src), str(tmp), 300)):
             dst = _next_page(workdir)
             os.replace(str(p), dst)
             out.append(dst)
+            pdf_pages.append((dst, i))
         shutil.rmtree(tmp, ignore_errors=True)
     elif ext in IMAGE_EXTS:
         img = Image.open(src)
@@ -183,7 +185,23 @@ def pages_from_upload(src: Path, workdir: Path) -> list[Path]:
         if max(img.size) > MAX_SIDE:
             img.thumbnail((MAX_SIDE, MAX_SIDE), Image.LANCZOS)
             img.save(p)
+    for png, i in pdf_pages:
+        save_pdf_words(src, i, png)
     return out
+
+
+def save_pdf_words(pdf: Path, index: int, png: Path) -> None:
+    """A PDF exported from notation software has its lyrics, chords and tempo as real text:
+    keep that (exact, and no OCR needed). Scanned PDFs have none and go through OCR."""
+    try:
+        import pdf_text
+        from PIL import Image
+        w, h = Image.open(png).size
+        words = pdf_text.words(str(pdf), index, w, h)
+        if sum(1 for x in words if any(c.isalpha() for c in x["t"])) >= 3:
+            png.with_suffix(".words.json").write_text(json.dumps(words), "utf-8")
+    except Exception:
+        traceback.print_exc()   # fall back to OCR
 
 
 def clean_homr_xml(path: Path) -> None:
@@ -242,12 +260,17 @@ def clean_homr_xml(path: Path) -> None:
 
 
 def page_text(png_path: str):
-    """Words on a page with their boxes, from the platform's OCR (ML Kit on Android)."""
+    """Words on a page with their boxes: from the PDF's own text when it has some,
+    otherwise from the platform's OCR (ML Kit on Android)."""
     import lyrics
-    ocr = getattr(S["platform"], "ocr", None)
-    if ocr is None:
-        return []
-    raw = json.loads(str(ocr(png_path)) or "[]")
+    saved = Path(png_path).with_suffix(".words.json")
+    if saved.exists():
+        raw = json.loads(saved.read_text("utf-8"))
+    else:
+        ocr = getattr(S["platform"], "ocr", None)
+        if ocr is None:
+            return []
+        raw = json.loads(str(ocr(png_path)) or "[]")
     return [lyrics.Word(w["t"], w["x0"], w["y0"], w["x1"], w["y1"]) for w in raw if w.get("t")]
 
 
@@ -335,7 +358,8 @@ def run_scan(sid: str, files: list[Path], title: str) -> None:
             t = time.time()
             try:
                 xmls.append(Path(omr_android.scan_page(str(p), ocr=page_text, progress=on_progress)))
-                log["pages"].append({"total_s": round(time.time() - t, 1), **omr_android.last_timing})
+                log["pages"].append({"total_s": round(time.time() - t, 1), **omr_android.last_timing,
+                                     "text_from": "pdf" if p.with_suffix(".words.json").exists() else "ocr"})
             except Exception as e:
                 traceback.print_exc()
                 errors.append(f"page {i + 1}: {e}")
@@ -789,7 +813,9 @@ def native_check() -> str:
     """Import every native module the app needs; raise naming the first that fails."""
     import importlib
     found = []
-    for mod in ("numpy", "cv2", "PIL.Image", "music21", "music"):
+    import pdf_text
+    pdf_text._stub_cryptography()
+    for mod in ("numpy", "cv2", "PIL.Image", "music21", "music", "pdfminer.pdfinterp"):
         try:
             m = importlib.import_module(mod)
         except Exception as e:
