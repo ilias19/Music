@@ -102,8 +102,11 @@ class MainActivity : ComponentActivity() {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         val night = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-        // The WebView only reads light/dark when it's created; rebuild so the page follows the phone.
-        if (night != uiMode) { uiMode = night; recreate() }
+        // WebView doesn't reliably pass the phone's dark mode to the page: tell the page directly.
+        if (night != uiMode) {
+            uiMode = night
+            web.evaluateJavascript("window.applyNativeTheme && applyNativeTheme('${themeName()}')", null)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -246,8 +249,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun themeName(): String =
+        if ((resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
+
     /** Called from the page's JavaScript as window.AndroidApp. */
     inner class NativeApi {
+        @JavascriptInterface
+        fun theme(): String = themeName()
+
         @JavascriptInterface
         fun keepScreenOn(on: Boolean) {
             runOnUiThread {

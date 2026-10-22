@@ -36,6 +36,9 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 
 // The Android app injects window.AndroidApp (keepScreenOn). In a plain browser it's absent.
 const native = window.AndroidApp || null;
+// The Android app says whether the phone is in dark mode (and calls this again when it changes).
+window.applyNativeTheme = (t) => { document.documentElement.dataset.theme = t === "dark" ? "dark" : "light"; };
+if (native?.theme) applyNativeTheme(native.theme());
 const isTouch = matchMedia("(pointer: coarse)").matches;
 
 // Downloads go through real server URLs with Content-Disposition, which both
@@ -389,6 +392,8 @@ const Player = (() => {
       watchWidth();
       osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmd", {
         autoResize: false, backend: "svg", drawTitle: true, drawComposer: true, drawPartNames: true,
+        // one rest per bar instead of "7 bars rest" blocks: every bar can be tapped, looped and counted
+        autoGenerateMultipleRestMeasuresFromRestMeasures: false,
         followCursor: false, cursorsOptions: [{ type: 0, color: "#2f6f6a", alpha: 0.35, follow: false }],
       });
     }

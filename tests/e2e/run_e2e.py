@@ -30,6 +30,7 @@ OUT = Path(__file__).parent / "out"
 PKG = "com.ilias.practiceroom"
 
 results: list[tuple[str, bool, str]] = []
+CURRENT = {"section": "start"}
 
 
 def check(name: str, cond: bool, detail: str = "") -> bool:
@@ -42,6 +43,7 @@ def section(fn):
     """Run a group of checks; an exception fails the group but not the run."""
     def run(*a, **k):
         print(f"\n== {fn.__name__}", flush=True)
+        CURRENT["section"] = fn.__name__
         try:
             fn(*a, **k)
         except Exception as e:
@@ -76,7 +78,7 @@ class App:
     def _console(self, text: str) -> None:
         if "Failed to load resource" in text or "TUNNEL" in text:
             return
-        self.errors.append(text[:300])
+        self.errors.append(f"[{CURRENT['section']}] {text[:300]}")
 
     def reattach(self):
         """Android: the activity (and its WebView) was rebuilt; connect to the new page."""
