@@ -21,7 +21,8 @@ from dataclasses import dataclass, field
 CHORD_RE = re.compile(
     r"^([A-G])([#b♯♭]?)(maj7|maj9|maj|M7|m7b5|m7|m9|m6|m11|min|m|dim7|dim|°|ø|aug|\+|sus2|sus4|sus|add9|add2|7sus4|"
     r"6/9|69|6|7|9|11|13)?(?:\(?(b5|#5|b9|#9|#11|b13)\)?)?(?:/([A-G])([#b♯♭]?))?$")
-TEMPO_RE = re.compile(r"=\s*(\d{2,3})\b")
+TEMPO_RE = re.compile(r"[=:\-\u2013\u2014]\s*(\d{2,3})\b")   # "= 120"; OCR sometimes reads "=" as ":" or "-"
+BARE_NUM_RE = re.compile(r"^[^\w]*[A-Za-z]?[^\w]*(\d{2,3})$")    # "J150", "150": the note glyph read as a letter, or lost
 WORDISH = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ'’]")
 # Performance markings printed in the same space as lyrics; a lone one is not a syllable.
 MARKINGS = {"p", "pp", "ppp", "mp", "mf", "f", "ff", "fff", "fp", "sf", "sfz", "sfp", "fz", "rf", "rfz",
@@ -337,9 +338,14 @@ def annotate(xml_path: str, multi_staffs, homr_width: int, image_width: int, wor
         for a, b in zip(ordered, ordered[1:]):
             if abs(a.cy - b.cy) < (a.y1 - a.y0) and 0 <= b.x0 - a.x1 < 3 * (a.y1 - a.y0):
                 candidates.append((a, a.text + " " + b.text))
+        above = [w for w in ordered if w.cy * scale < first.top]
+        print("lyrics: text above the first staff:", [w.text for w in above][:20], flush=True)
+        # a lone number above the music, in the left half, is the tempo when no "=" was read
+        candidates += [(w, "=" + BARE_NUM_RE.match(w.text).group(1)) for w in above
+                       if BARE_NUM_RE.match(w.text) and w.x1 < image_width * 0.5]
         for w, text in candidates:
             m = TEMPO_RE.search(text)
-            if m and w.cy * scale < first.top and 30 <= int(m.group(1)) <= 300:
+            if m and w.cy * scale < first.top and 40 <= int(m.group(1)) <= 260:
                 bpm = int(m.group(1))
                 meas = parts[0].find("measure")
                 d = ET.Element("direction", {"placement": "above"})
