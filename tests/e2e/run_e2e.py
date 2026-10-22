@@ -687,23 +687,40 @@ def main() -> int:
             adb("shell", "am", "start", "-n", f"{PKG}/.MainActivity")
 
             def connect():
-                pid = ""
-                for _ in range(60):
-                    pid = adb("shell", "pidof", PKG).strip()
-                    if pid:
-                        break
-                    time.sleep(1)
-                adb("forward", "tcp:9222", f"localabstract:webview_devtools_remote_{pid}")
-                for _ in range(60):
+                import urllib.request
+                last_err = ""
+                for attempt in range(40):
+                    socks = re.findall(r"@(webview_devtools_remote_\d+)", adb("shell", "cat", "/proc/net/unix"))
+                    pid = adb("shell", "pidof", PKG).strip().split()
+                    sock = next((x for x in socks if pid and x.endswith("_" + pid[0])), socks[0] if socks else None)
+                    if attempt % 5 == 0:
+                        print(f"   attach: pid={pid} sockets={sorted(set(socks))}", flush=True)
+                    if not sock:
+                        time.sleep(2); continue
+                    adb("forward", "--remove-all")
+                    adb("forward", "tcp:9222", f"localabstract:{sock}")
                     try:
-                        br = p.chromium.connect_over_cdp("http://127.0.0.1:9222")
-                        pages = [pg for c in br.contexts for pg in c.pages if "127.0.0.1" in pg.url]
-                        if pages:
-                            return br, pages[0]
-                    except Exception:
-                        pass
-                    time.sleep(2)
-                raise RuntimeError("couldn't attach to the app's WebView")
+                        version = json.loads(urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=5).read())
+                        targets = json.loads(urllib.request.urlopen("http://127.0.0.1:9222/json/list", timeout=5).read())
+                        if attempt % 5 == 0:
+                            print(f"   attach: version={version} targets={[t.get('url') for t in targets]}", flush=True)
+                    except Exception as e:
+                        last_err = f"devtools http: {e}"; time.sleep(2); continue
+                    for endpoint in ("http://127.0.0.1:9222", version.get("webSocketDebuggerUrl", "")):
+                        if not endpoint:
+                            continue
+                        try:
+                            br = p.chromium.connect_over_cdp(endpoint, timeout=20000)
+                            pages = [pg for c in br.contexts for pg in c.pages if "127.0.0.1" in pg.url]
+                            if pages:
+                                print(f"   attached via {endpoint} to {pages[0].url}", flush=True)
+                                return br, pages[0]
+                            last_err = f"connected via {endpoint} but no app page: {[pg.url for c in br.contexts for pg in c.pages]}"
+                        except Exception as e:
+                            last_err = f"{endpoint}: {type(e).__name__}: {str(e)[:400]}"
+                    print(f"   attach attempt {attempt}: {last_err}", flush=True)
+                    time.sleep(3)
+                raise RuntimeError(f"couldn't attach to the app's WebView: {last_err}")
 
             browser, page = connect()
             page.wait_for_selector(".card", timeout=120000)
