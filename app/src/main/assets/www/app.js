@@ -287,6 +287,8 @@ const Player = (() => {
 
   // transport state
   let playing = false, posQ = 0;
+  // Where the music actually starts: intros of empty bars are skipped unless the user picks a bar there.
+  let introEndQ = 0, introBars = 0, playIntro = false;
   let anchorQ = 0, anchorT = 0, schedQ = 0, schedTimer = null, raf = null, curIdx = -1, stopAtT = null;
   const LOOKAHEAD = 0.15;
 
@@ -295,7 +297,7 @@ const Player = (() => {
 
   // ---------------------------------------------------------- loading --
   async function open(id) {
-    if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; partState = []; }
+    if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; partState = []; playIntro = false; }
     sid = id;
     $("#loading").hidden = false;
     $("#loading").textContent = "Loading score…";
@@ -388,6 +390,10 @@ const Player = (() => {
     for (const m of measures) { if (m.start === null) m.start = acc; acc = m.start + m.len; }
     const last = steps[steps.length - 1];
     totalQ = last ? Math.max(acc, last.q + Math.max(...last.notes.map((n) => n.dur), prevMin)) : 0;
+    const firstSound = steps.find((st) => st.notes.length);
+    const introBar = firstSound ? firstSound.measure : 0;
+    introEndQ = measures[introBar]?.start ?? 0;
+    introBars = introBar;
     cursor.reset();
   }
 
@@ -502,6 +508,10 @@ const Player = (() => {
     partState.forEach((p, i) => Sound.setPart(i, p));
     if (loop.on && (posQ < loopStart() || posQ >= loopEnd())) posQ = loopStart();
     if (posQ >= totalQ - 1e-6) posQ = 0;
+    if (!loop.on && !playIntro && introBars > 0 && posQ < introEndQ - 1e-6) {
+      posQ = introEndQ;
+      toast(`Skipped ${introBars} empty bar${introBars > 1 ? "s" : ""} at the start (tap bar 1 to hear them)`);
+    }
     let start = Tone.now() + 0.08;
     if (countIn) {
       const m = measures[steps[stepIndexAt(posQ)].measure] || measures[0];
@@ -713,6 +723,7 @@ const Player = (() => {
     if (loop.on) {
       if (i < loop.a || i > (loop.b ?? loop.a)) { loop.on = false; setLoopBtn(); }
     }
+    playIntro = measures[i].start < introEndQ - 1e-6;   // the user chose a bar inside the intro
     loop.a = i; loop.b = null;
     drawLoop();
     seek(measures[i].start);

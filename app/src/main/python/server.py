@@ -266,9 +266,9 @@ def merge_pages(xmls: list[Path], title: str) -> str:
     if score.metadata is None:
         score.insert(0, m21.metadata.Metadata())
     score.metadata.title = title
-    score.metadata.movementName = title
     score.metadata.composer = ""   # otherwise music21 writes "Music21" as the composer
-    return music.to_xml(score)
+    # music21 repeats the title as movement-title, which the player shows as a subtitle
+    return re.sub(r"\s*<movement-title>.*?</movement-title>", "", music.to_xml(score), count=1)
 
 
 def run_scan(sid: str, files: list[Path], title: str) -> None:
