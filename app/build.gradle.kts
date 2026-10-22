@@ -94,6 +94,13 @@ chaquopy {
             install("idna==3.20")
             install("certifi==2026.10.19")
             install("charset-normalizer==3.5.2")
+            // Native libraries Chaquopy's binary wheels link against (skipped by --no-deps)
+            install("chaquopy-libjpeg")      // Pillow
+            install("chaquopy-libpng")       // Pillow
+            install("chaquopy-freetype")     // Pillow
+            install("chaquopy-openblas")     // numpy
+            install("chaquopy-libgfortran")  // openblas
+            install("chaquopy-libcxx")       // OpenCV
         }
     }
 }

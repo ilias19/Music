@@ -615,11 +615,26 @@ def start(data_dir, www_dir, gallery_dir, models_dir, bridge, platform, token, p
     return httpd.server_address[1]
 
 
+def native_check() -> str:
+    """Import every native module the app needs; raise naming the first that fails."""
+    import importlib
+    found = []
+    for mod in ("numpy", "cv2", "PIL.Image", "music21", "music"):
+        try:
+            m = importlib.import_module(mod)
+        except Exception as e:
+            raise RuntimeError(f"import {mod} failed: {e}") from e
+        v = getattr(m, "__version__", None) or getattr(m, "VERSION", None) or ""
+        found.append(f"{mod}={v}" if v else mod)
+    return " ".join(found)
+
+
 def warm_up() -> None:
     """Import the heavy modules ahead of first use (called in the background)."""
-    import music21  # noqa: F401
-    import cv2  # noqa: F401
-    import music  # noqa: F401
+    try:
+        print("Practice Room imports:", native_check(), flush=True)
+    except Exception:
+        traceback.print_exc()
 
 
 # ---------------------------------------------------------------- self-test --
@@ -641,6 +656,7 @@ def selftest(image_path: str, token: str) -> str:
         with urllib.request.urlopen(req, timeout=600) as r:
             return r.read(), r.headers.get("Content-Type", "")
 
+    versions = native_check()
     t0 = time.time()
     boundary = uuid.uuid4().hex
     img = Path(image_path).read_bytes()
@@ -672,5 +688,5 @@ def selftest(image_path: str, token: str) -> str:
     if "<fifths>-2</fifths>" not in tr:  # C down a tone = B-flat major
         raise RuntimeError("transposition didn't change the key")
     lst = json.loads(call("GET", "/api/scores")[0])
-    return (f"notes={len(notes)} first15=ok scan_seconds={scan_s:.1f} midi_bytes={len(midi)} "
+    return (f"{versions} notes={len(notes)} first15=ok scan_seconds={scan_s:.1f} midi_bytes={len(midi)} "
             f"library={len(lst)} live_tensors={S['bridge'].liveTensors() if hasattr(S['bridge'], 'liveTensors') else '?'}")
