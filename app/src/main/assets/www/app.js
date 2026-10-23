@@ -232,12 +232,40 @@ const Sound = (() => {
   // One channel per mixer track: instrument -> volume -> master.
   const INSTRUMENTS = {
     piano: "Piano",
+    voice: "Voice (aah)",
     soft: "Soft synth",
     organ: "Organ",
     bass: "Bass",
   };
 
+  // A sung "aah": a buzzy source (like vocal folds) shaped by the three formants of the
+  // vowel /a/, with a slow attack and a vibrato that comes in after the note starts.
+  function makeVoice() {
+    const out = new Tone.Gain(1);
+    const formants = [[800, 0, 5], [1150, -5, 6], [2900, -18, 8], [3900, -26, 9]].map(([f, db, q]) => {
+      const bp = new Tone.Filter({ type: "bandpass", frequency: f, Q: q });
+      const g = new Tone.Gain(Tone.dbToGain(db));
+      bp.connect(g); g.connect(out);
+      return [bp, g];
+    });
+    const vib = new Tone.Vibrato({ frequency: 5.2, depth: 0.06 });
+    const poly = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: "fatsawtooth", count: 3, spread: 14 },
+      envelope: { attack: 0.09, decay: 0.15, sustain: 0.9, release: 0.3 },
+      volume: -4,
+    });
+    poly.connect(vib);
+    for (const [bp] of formants) vib.connect(bp);
+    return {
+      connect(dest) { out.connect(dest); return this; },
+      triggerAttackRelease(...a) { poly.triggerAttackRelease(...a); },
+      releaseAll(t) { poly.releaseAll(t); },
+      dispose() { poly.dispose(); vib.dispose(); for (const [bp, g] of formants) { bp.dispose(); g.dispose(); } out.dispose(); },
+    };
+  }
+
   function makeInstrument(kind) {
+    if (kind === "voice") return makeVoice();
     if (kind === "piano") return buffers ? new Tone.Sampler({ urls: buffers, release: 1 }) : makeSynth();
     if (kind === "organ") return new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: "fatsine4", count: 3, spread: 18 },
@@ -387,8 +415,8 @@ const Player = (() => {
   // Mixer: one track per part / voice, with chords split into melody (top note) and harmony.
   let tracks = [];          // [{ key, name, count, mute, solo, db, instrument, hidden, notes:[Note] }]
   let xmlStats = { lyrics: 0, chords: 0 };
-  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5;
-  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom")) || 1; } catch { return 1; } })();
+  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.59;
+  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom2")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
   let trackState = {};      // key -> saved settings, survives transposition
 
   // transport state
@@ -1056,9 +1084,9 @@ const Player = (() => {
 
   // ---- zoom: buttons, typed-in steps and pinch; remembered on this device ----
   function setZoom(z, rerender = true) {
-    userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 20) / 20;   // 5% steps
+    userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 100) / 100;
     $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
-    try { localStorage.setItem("pr.zoom", String(userZoom)); } catch {}
+    try { localStorage.setItem("pr.zoom2", String(userZoom)); } catch {}
     if (rerender && osmd) { renderScore(); afterRender(); }
   }
   $("#zoom-btn").addEventListener("click", () => {
@@ -1068,7 +1096,7 @@ const Player = (() => {
   });
   $("#zoom-in").addEventListener("click", () => setZoom(userZoom + 0.1));
   $("#zoom-out").addEventListener("click", () => setZoom(userZoom - 0.1));
-  $("#zoom-reset").addEventListener("click", () => setZoom(1));
+  $("#zoom-reset").addEventListener("click", () => setZoom(ZOOM_DEFAULT));
 
   // pinch: scale the page live with CSS, re-engrave at the new size when the fingers lift
   // Touch events (not pointer events): they keep firing even after the page starts scrolling.

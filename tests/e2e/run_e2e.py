@@ -472,6 +472,12 @@ def mixer(app: App):
     app.page.locator(".track", has_text="Harmony").locator("select").select_option("organ")
     r = run("organ")
     check("instrument change still plays", r["peak"] > 0.01, f"{r['peak']:.3f}")
+    if not app.page.is_visible("#mixer"):
+        app.page.click("#mixer-btn")
+    app.page.locator(".track", has_text="Harmony").locator("select").select_option("voice")
+    r = run("voice")
+    check("the Voice (aah) instrument plays", r["peak"] > 0.01 and app.state()["tracks"][1]["instrument"] == "voice",
+          f"{r['peak']:.3f}")
     app.page.click("#mixer-btn") if not app.page.is_visible("#mixer") else None
     app.page.locator(".track", has_text="Harmony").locator("select").select_option("piano")
     app.page.click("#mixer-close")
@@ -485,22 +491,22 @@ def display(app: App):
     app.page.click("#side-btn")
     w0 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
     app.page.click("#zoom-btn")
-    check("zoom control opens", app.page.is_visible("#zoom-sheet") and app.page.inner_text("#zoom-val") == "100%", app.page.inner_text("#zoom-val"))
+    check("zoom control opens", app.page.is_visible("#zoom-sheet") and app.page.inner_text("#zoom-val") == "59%", app.page.inner_text("#zoom-val"))
     for _ in range(4):
         app.page.click("#zoom-in"); app.page.wait_for_timeout(300)
     app.page.wait_for_timeout(500)
     w1 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    check("zoom + makes the score bigger", w1 > w0 * 1.15 and app.page.inner_text("#zoom-val") == "140%", f"{w0:.0f} -> {w1:.0f} px, {app.page.inner_text('#zoom-val')}")
+    check("zoom + makes the score bigger", w1 > w0 * 1.15 and app.page.inner_text("#zoom-val") == "99%", f"{w0:.0f} -> {w1:.0f} px, {app.page.inner_text('#zoom-val')}")
     sw = app.page.evaluate("document.querySelector('#paper-scroll').scrollWidth - document.querySelector('#paper-scroll').clientWidth")
     check("zoomed score doesn't scroll sideways", sw <= 2, f"{sw} px")
-    for _ in range(7):
+    for _ in range(6):
         app.page.click("#zoom-out"); app.page.wait_for_timeout(250)
     app.page.wait_for_timeout(500)
     w2 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    check("zoom − makes it smaller", w2 < w0 * 0.9 and app.page.inner_text("#zoom-val") == "70%", f"{w0:.0f} -> {w2:.0f} px")
+    check("zoom − makes it smaller", w2 < w0 * 0.92 and app.page.inner_text("#zoom-val") == "50%", f"{w0:.0f} -> {w2:.0f} px")
     app.open("Ode to Joy (Beethoven)")
-    check("zoom is remembered for other scores", abs(app.state()["zoom"] - 0.7) < 0.01, str(app.state()["zoom"]))
-    check("zoom % shows the remembered value", app.page.inner_text("#zoom-val") == "70%", app.page.inner_text("#zoom-val"))
+    check("zoom is remembered for other scores", abs(app.state()["zoom"] - 0.5) < 0.01, str(app.state()["zoom"]))
+    check("zoom % shows the remembered value", app.page.inner_text("#zoom-val") == "50%", app.page.inner_text("#zoom-val"))
     app.page.click("#zoom-btn")
     pinched = app.page.evaluate("""async () => {
         const el = document.querySelector('#paper-scroll'), r = el.getBoundingClientRect();
@@ -513,10 +519,10 @@ def display(app: App):
         fire('touchend', []);
         await new Promise((r) => setTimeout(r, 800));
         return Player.state.zoom; }""")
-    check("pinching out zooms in", 1.3 <= pinched <= 1.45, f"0.7 -> {pinched}")
+    check("pinching out zooms in", 0.9 <= pinched <= 1.05, f"0.5 -> {pinched}")
     app.page.click("#zoom-reset")
     app.page.wait_for_timeout(500)
-    check("Fit resets zoom to 100%", app.page.inner_text("#zoom-val") == "100%" and app.state()["zoom"] == 1)
+    check("Reset goes back to 59%", app.page.inner_text("#zoom-val") == "59%" and app.state()["zoom"] == 0.59)
     app.page.click("#zoom-btn")
     check("zoom control closes", not app.page.is_visible("#zoom-sheet"))
 
