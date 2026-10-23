@@ -491,8 +491,8 @@ const Player = (() => {
   // Mixer: one track per part / voice, with chords split into melody (top note) and harmony.
   let tracks = [];          // [{ key, name, count, mute, solo, db, instrument, hidden, notes:[Note] }]
   let xmlStats = { lyrics: 0, chords: 0 };
-  const ZOOM_MIN = 0.3, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.5;
-  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom3")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
+  const ZOOM_MIN = 0.2, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.3;
+  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom4")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
   let trackState = {};      // key -> saved settings, survives transposition
 
   // transport state
@@ -565,7 +565,7 @@ const Player = (() => {
       const avail = box.clientWidth;
       const need = Math.max(box.scrollWidth, svg ? svg.getBoundingClientRect().width : 0);
       if (!avail || need <= avail + 2) break;
-      zoom = Math.max(0.35, zoom * (avail / need) * 0.98);
+      zoom = Math.max(0.2, zoom * (avail / need) * 0.98);
       osmd.zoom = zoom;
       osmd.render();
     }
@@ -676,18 +676,44 @@ const Player = (() => {
   }
 
   // Mark the notes of hidden tracks invisible. Returns true if anything is hidden (needs a re-render).
+  // What the page shows. With "Only show the parts you hear" on (the default), a muted track, or
+  // every track but the soloed ones, disappears from the page too: its notes, and its whole staff
+  // when nothing on that staff is left (a choir part). Never everything: then all is shown.
+  let followMix = (() => { try { return localStorage.getItem("pr.followMix") !== "0"; } catch { return true; } })();
+  function audible(t) {
+    return tracks.some((x) => x.solo) ? t.solo : !t.mute;
+  }
+  function shown(t) {
+    if (t.hidden) return false;
+    if (!followMix) return true;
+    const any = tracks.some((x) => !x.hidden && audible(x));
+    return any ? audible(t) : true;
+  }
+  let shownKey = "";
   function applyHidden() {
     let any = false;
     for (const t of tracks) {
-      for (const n of t.notes) n.PrintObject = !t.hidden;
-      any = any || t.hidden;
+      const on = shown(t);
+      for (const n of t.notes) n.PrintObject = on;
+      any = any || !on;
     }
-    return any;
+    // staves with nothing left to show go away, as long as one staff stays
+    const insts = osmd.Sheet.Instruments;
+    const partShown = insts.map((_, i) => tracks.some((t) => t.part === i && shown(t)) || !tracks.some((t) => t.part === i));
+    const keep = partShown.some(Boolean);
+    insts.forEach((inst, i) => { inst.Visible = keep ? partShown[i] : true; });
+    shownKey = tracks.map(shown).join() + "|" + insts.map((x) => x.Visible).join();
+    return any || insts.some((x) => !x.Visible);
+  }
+  function refreshShown() {
+    const before = shownKey;
+    applyHidden();
+    if (shownKey !== before) { renderScore(); afterRender(); }
   }
 
   // Invisible notes still get their beams drawn: hide every beam whose notes are all hidden.
   function hideOrphanBeams() {
-    if (!tracks.some((t) => t.hidden)) return;
+    if (!tracks.some((t) => !shown(t))) return;
     const hidden = new Set();
     for (const list of osmd.GraphicSheet.MeasureList) for (const gm of list || []) {
       if (!gm) continue;
@@ -1163,7 +1189,7 @@ const Player = (() => {
   function setZoom(z, rerender = true) {
     userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 100) / 100;
     $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
-    try { localStorage.setItem("pr.zoom3", String(userZoom)); } catch {}
+    try { localStorage.setItem("pr.zoom4", String(userZoom)); } catch {}
     if (rerender && osmd) { renderScore(); afterRender(); }
   }
   $("#zoom-btn").addEventListener("click", () => {
@@ -1216,6 +1242,12 @@ const Player = (() => {
     $("#mixer-btn").setAttribute("aria-pressed", String(!m.hidden));
   });
   $("#mixer-close").addEventListener("click", () => { $("#mixer").hidden = true; $("#mixer-btn").setAttribute("aria-pressed", "false"); });
+  $("#mixer-follow").checked = followMix;
+  $("#mixer-follow").addEventListener("change", (e) => {
+    followMix = e.target.checked;
+    try { localStorage.setItem("pr.followMix", followMix ? "1" : "0"); } catch {}
+    refreshShown();
+  });
   $("#mixer-hide-all").addEventListener("click", () => {
     const anyHidden = tracks.some((t) => t.hidden);
     setHidden(tracks, !anyHidden);
@@ -1225,7 +1257,7 @@ const Player = (() => {
     const t = tracks[+b.closest("[data-track]").dataset.track];
     if (b.dataset.act === "solo") t.solo = !t.solo;
     if (b.dataset.act === "mute") t.mute = !t.mute;
-    saveTrack(t); syncSound(); renderMixer();
+    saveTrack(t); syncSound(); renderMixer(); refreshShown();
   });
   $("#mixer-tracks").addEventListener("input", (e) => {
     const el = e.target; const row = el.closest("[data-track]"); if (!row) return;
@@ -1350,7 +1382,7 @@ const Player = (() => {
   }
 
   return { open, close, barRect, scrollToBar, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ, zoom: userZoom, ...xmlStats,
-    tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden })) }; } };
+    tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden, shown: shown(t) })), staves: osmd ? osmd.Sheet.Instruments.filter((i) => i.Visible).length : 0 }; } };
 })();
 
 async function openPlayer(id) {

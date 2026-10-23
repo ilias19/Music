@@ -493,22 +493,22 @@ def display(app: App):
     app.page.click("#side-btn")
     w0 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
     app.page.click("#zoom-btn")
-    check("zoom control opens", app.page.is_visible("#zoom-sheet") and app.page.inner_text("#zoom-val") == "50%", app.page.inner_text("#zoom-val"))
+    check("zoom control opens", app.page.is_visible("#zoom-sheet") and app.page.inner_text("#zoom-val") == "30%", app.page.inner_text("#zoom-val"))
     for _ in range(4):
         app.page.click("#zoom-in"); app.page.wait_for_timeout(300)
     app.page.wait_for_timeout(500)
     w1 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    check("zoom + makes the score bigger", w1 > w0 * 1.15 and app.page.inner_text("#zoom-val") == "90%", f"{w0:.0f} -> {w1:.0f} px, {app.page.inner_text('#zoom-val')}")
+    check("zoom + makes the score bigger", w1 > w0 * 1.15 and app.page.inner_text("#zoom-val") == "70%", f"{w0:.0f} -> {w1:.0f} px, {app.page.inner_text('#zoom-val')}")
     sw = app.page.evaluate("document.querySelector('#paper-scroll').scrollWidth - document.querySelector('#paper-scroll').clientWidth")
     check("zoomed score doesn't scroll sideways", sw <= 2, f"{sw} px")
     for _ in range(6):
         app.page.click("#zoom-out"); app.page.wait_for_timeout(250)
     app.page.wait_for_timeout(500)
     w2 = app.page.evaluate("document.querySelector('#osmd svg').getBoundingClientRect().height")
-    check("zoom − makes it smaller", w2 < w0 * 0.92 and app.page.inner_text("#zoom-val") == "30%", f"{w0:.0f} -> {w2:.0f} px")
+    check("zoom − makes it smaller", w2 < w0 * 0.92 and app.page.inner_text("#zoom-val") == "20%", f"{w0:.0f} -> {w2:.0f} px")
     app.open("Ode to Joy (Beethoven)")
-    check("zoom is remembered for other scores", abs(app.state()["zoom"] - 0.3) < 0.01, str(app.state()["zoom"]))
-    check("zoom % shows the remembered value", app.page.inner_text("#zoom-val") == "30%", app.page.inner_text("#zoom-val"))
+    check("zoom is remembered for other scores", abs(app.state()["zoom"] - 0.2) < 0.01, str(app.state()["zoom"]))
+    check("zoom % shows the remembered value", app.page.inner_text("#zoom-val") == "20%", app.page.inner_text("#zoom-val"))
     app.page.click("#zoom-btn")
     pinched = app.page.evaluate("""async () => {
         const el = document.querySelector('#paper-scroll'), r = el.getBoundingClientRect();
@@ -521,10 +521,10 @@ def display(app: App):
         fire('touchend', []);
         await new Promise((r) => setTimeout(r, 800));
         return Player.state.zoom; }""")
-    check("pinching out zooms in", 0.5 <= pinched <= 0.65, f"0.3 -> {pinched}")
+    check("pinching out zooms in", 0.35 <= pinched <= 0.45, f"0.2 -> {pinched}")
     app.page.click("#zoom-reset")
     app.page.wait_for_timeout(500)
-    check("Reset goes back to 50%", app.page.inner_text("#zoom-val") == "50%" and app.state()["zoom"] == 0.5)
+    check("Reset goes back to 30%", app.page.inner_text("#zoom-val") == "30%" and app.state()["zoom"] == 0.3)
     app.page.click("#zoom-btn")
     check("zoom control closes", not app.page.is_visible("#zoom-sheet"))
 
@@ -546,6 +546,37 @@ def display(app: App):
     app.page.click("#side-btn")
     title = app.page.locator("#osmd text", has_text="Chorale").count()
     check("score title is drawn once", title == 1, f"{title}")
+
+
+@section
+def parts_follow_mix(app: App):
+    app.open("Chorale BWV 66.6 (Bach)")
+    check("all 4 staves are shown", app.state()["staves"] == 4, str(app.state()["staves"]))
+    app.page.click("#mixer-btn")
+    first = app.page.locator(".track").first
+    name = first.locator(".track-name").inner_text() if first.locator(".track-name").count() else "track 1"
+    first.locator("[data-act=solo]").click()
+    app.page.wait_for_timeout(800)
+    st = app.state()
+    check("soloing one part shows only its staff", st["staves"] == 1 and st["tracks"][0]["shown"], f"{name}: {st['staves']} staves")
+    first.locator("[data-act=solo]").click()
+    app.page.wait_for_timeout(800)
+    check("un-soloing brings every staff back", app.state()["staves"] == 4, str(app.state()["staves"]))
+    second = app.page.locator(".track").nth(1)
+    second.locator("[data-act=mute]").click()
+    app.page.wait_for_timeout(800)
+    check("muting a part hides its staff", app.state()["staves"] == 3, str(app.state()["staves"]))
+    app.page.uncheck("#mixer-follow")
+    app.page.wait_for_timeout(800)
+    check("'Only show the parts you hear' off shows it again", app.state()["staves"] == 4, str(app.state()["staves"]))
+    app.page.check("#mixer-follow")
+    second.locator("[data-act=mute]").click()
+    app.page.wait_for_timeout(800)
+    check("unmuting shows it", app.state()["staves"] == 4, str(app.state()["staves"]))
+    r = app.play_for(1.5)
+    check("score still plays after hiding staves", r["peak"] > 0.01, f"{r['peak']:.3f}")
+    app.page.click("#stop")
+    app.page.click("#mixer-close") if app.page.is_visible("#mixer") else None
 
 
 @section
@@ -933,6 +964,7 @@ def main() -> int:
             intro_skip(app)
             mixer(app)
         display(app)
+        parts_follow_mix(app)
         compare_original(app)
         recording(app)
         exports(app, ctx_downloads=not a.android)
