@@ -13,71 +13,82 @@
 <!-- ============================== LIBRARY ============================== -->
 <main id="library" class="view">
   <header class="lib-head">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 32 32"><path d="M12 22a3 3 0 1 1-2-2.8V8l12-3v12a3 3 0 1 1-2-2.8V8.6l-8 2V22z"/></svg>
-      </span>
-      <h1>Practice Room</h1>
+    <div class="lib-title">
+      <p class="hello" id="hello">Practice Room</p>
+      <h1>Rehearsal</h1>
     </div>
-    <div class="stats" id="stats" aria-label="Practice time">
-      <div class="stat"><span class="stat-num" id="stat-today">0m</span><span class="stat-lbl">today</span></div>
-      <div class="stat"><span class="stat-num" id="stat-week">0m</span><span class="stat-lbl">this week</span></div>
-      <div class="stat"><span class="stat-num" id="stat-streak">0</span><span class="stat-lbl">day streak</span></div>
-      <div class="spark" id="spark" title="Last 14 days"></div>
-    </div>
+    <label class="voice-chip" title="The part you sing: opened scores start on it">
+      <span class="dot" id="voice-dot" aria-hidden="true"></span>
+      <select id="my-voice" aria-label="The part I sing">
+        <option value="">Any part</option>
+        <option value="soprano">I sing Soprano</option>
+        <option value="alto">I sing Alto</option>
+        <option value="tenor">I sing Tenor</option>
+        <option value="bass">I sing Bass</option>
+      </select>
+    </label>
   </header>
 
-  <section class="drop" id="drop" tabindex="0">
-    <div class="drop-inner">
-      <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M10 6h20l8 8v28H10z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 22h18M15 27h18M15 32h18M15 37h18" stroke="currentColor" stroke-width="1.6" opacity=".55"/><path d="M30 6v8h8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></svg>
-      <p class="drop-title" id="drop-title">Drop sheet music here</p>
-      <p class="drop-sub">Photos, scans or PDFs are read automatically. MusicXML files open as-is.<br>Several images at once become one score, in order.</p>
-      <div class="drop-actions">
-        <label class="btn primary"><input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.musicxml,.xml,.mxl,image/*,application/pdf" hidden>Choose files</label>
-        <label class="btn"><input type="file" id="camera-input" accept="image/*" capture="environment" hidden>Take a photo</label>
-      </div>
-    </div>
-  </section>
+  <div class="stats" id="stats" aria-label="Practice time">
+    <div class="stat"><span class="stat-num" id="stat-today">0m</span><span class="stat-lbl">today</span></div>
+    <div class="stat"><span class="stat-num" id="stat-week">0m</span><span class="stat-lbl">this week</span><div class="spark" id="spark" title="Last 14 days"></div></div>
+    <div class="stat"><span class="stat-num" id="stat-streak">0</span><span class="stat-lbl">day streak</span></div>
+  </div>
 
-  <section>
+  <section class="pieces" id="drop" tabindex="-1" aria-label="Your pieces">
     <div class="section-head">
-      <h2>Library</h2>
-      <input type="search" id="search" placeholder="Search" aria-label="Search scores">
+      <h2 id="drop-title">Your pieces</h2>
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="search" placeholder="Search" aria-label="Search scores"></label>
     </div>
     <div class="grid" id="grid"></div>
+    <p class="drop-hint">Drop PDFs, photos or MusicXML anywhere here.</p>
   </section>
+
+  <nav class="lib-bar" aria-label="Add music">
+    <label class="bar-btn"><input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.bmp,.musicxml,.xml,.mxl,image/*,application/pdf" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+      <span>Files</span></label>
+    <label class="scan-btn" title="Take a photo of sheet music"><input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M8 12h8"/></svg>
+      <span class="sr">Scan with the camera</span></label>
+    <a class="bar-btn" href="#/" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span>Pieces</span></a>
+  </nav>
 </main>
 
 <!-- ============================== PLAYER =============================== -->
 <main id="player" class="view" hidden>
   <header class="top">
     <button class="icon-btn" id="back" aria-label="Back to library" title="Library">
-      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
     </button>
     <div class="title-wrap">
       <h1 id="score-title" contenteditable="true" spellcheck="false"></h1>
       <div class="meta" id="score-meta"></div>
     </div>
-    <div class="top-right">
-      <span class="timer" id="timer" title="Practice time this session">0:00</span>
-      <button class="btn small" id="compare-btn" hidden>Original scan</button>
-      <button class="icon-btn" id="zoom-btn" aria-pressed="false" aria-label="Zoom" title="Zoom (or pinch the score)">
-        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15 15l5 5M8 10.5h5M10.5 8v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-      <div class="menu-wrap">
-        <button class="btn small" id="export-btn" aria-haspopup="true">Export</button>
-        <div class="menu" id="export-menu" hidden>
-          <button data-fmt="pdf">PDF</button>
-          <button data-fmt="midi">MIDI</button>
-          <button data-fmt="musicxml">MusicXML</button>
-          <p class="menu-note">Exports use the current transposition and tempo.</p>
-        </div>
-      </div>
-      <button class="icon-btn" id="side-btn" aria-label="Recordings and display" title="Recordings &amp; display">
-        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-    </div>
+    <button class="btn small" id="compare-btn" hidden>Original scan</button>
+    <button class="icon-btn" id="zoom-btn" aria-pressed="false" aria-label="Zoom" title="Zoom (or pinch the score)">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5M8 11h6M11 8v6"/></svg>
+    </button>
+    <button class="voices-btn" id="mixer-btn" aria-pressed="false" title="Voices: who you hear, how loud, which sound">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+      <span>Voices</span>
+    </button>
+    <button class="icon-btn" id="side-btn" aria-label="More: export, recordings, original scan" title="More">
+      <svg viewBox="0 0 24 24" class="fill"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>
+    </button>
   </header>
+
+  <div class="focus" id="focus" hidden>
+    <div class="mypart" id="mypart" role="radiogroup" aria-label="My part"></div>
+    <label class="others" id="others-row">
+      <span>Other voices</span>
+      <input type="range" id="others" min="0" max="100" step="5" value="35" aria-label="Volume of the other voices">
+      <output id="others-out">quiet</output>
+    </label>
+  </div>
 
   <div class="stage">
     <div class="paper-scroll" id="paper-scroll">
@@ -88,7 +99,23 @@
       <div class="loading" id="loading">Loading score…</div>
     </div>
 
-    <aside class="side" id="side" hidden>
+    <div class="lyric-strip" id="lyric-strip" aria-live="polite" hidden>
+      <div class="lyric-head" id="lyric-head"></div>
+      <div class="lyric-line" id="lyric-line"></div>
+    </div>
+
+    <aside class="side sheet" id="side" hidden aria-label="More">
+      <div class="sheet-head"><h2>More</h2><span class="timer" id="timer" title="Practice time this session">0:00</span></div>
+      <div class="side-block">
+        <h3>Export</h3>
+        <button class="btn small" id="export-btn" aria-haspopup="true">Export as…</button>
+        <div class="menu" id="export-menu" hidden>
+          <button data-fmt="pdf">PDF</button>
+          <button data-fmt="midi">MIDI</button>
+          <button data-fmt="musicxml">MusicXML</button>
+          <p class="menu-note">Exports use the current transposition and tempo.</p>
+        </div>
+      </div>
       <div class="side-block">
         <h3>Recordings</h3>
         <div id="recordings"><p class="muted">Record yourself with the ● button.</p></div>
@@ -111,14 +138,21 @@
       <button class="link-btn zoom-reset" id="zoom-reset">Reset</button>
     </section>
 
-    <section class="mixer" id="mixer" hidden aria-label="Mixer">
-      <div class="mixer-head">
+    <section class="mixer sheet" id="mixer" hidden aria-label="Voices">
+      <div class="sheet-head">
+        <h2>Voices</h2>
         <button class="link-btn" id="mixer-hide-all">All off</button>
-        <h3>Mixer</h3>
-        <button class="icon-btn" id="mixer-close" aria-label="Close mixer">
-          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>
-        </button>
+        <button class="link-btn done" id="mixer-close">Done</button>
       </div>
+      <div class="quick" id="quick" hidden>
+        <h3>Quick mixes</h3>
+        <div class="quick-row">
+          <button id="mix-learn" aria-pressed="false"><b>Learn my part</b><span>mine loud</span></button>
+          <button id="mix-sing" aria-pressed="false"><b>Sing along</b><span>mine silent</span></button>
+          <button id="mix-full" aria-pressed="false"><b>Full choir</b><span>all equal</span></button>
+        </div>
+      </div>
+      <label class="mixer-follow" id="mine-only-row"><input type="checkbox" id="mine-only" checked> Only my part on the page</label>
       <label class="mixer-follow"><input type="checkbox" id="mixer-follow" checked> Only show the parts you hear</label>
       <div class="mixer-tracks" id="mixer-tracks"></div>
     </section>
@@ -131,39 +165,39 @@
   </div>
 
   <footer class="transport">
-    <div class="t-group">
+    <div class="speed" role="group" aria-label="Speed">
+      <button class="sp" data-speed="0.5">50%</button>
+      <button class="sp" data-speed="0.75">75%</button>
+      <button class="sp" data-speed="1">100%</button>
+      <label class="bpm" title="Type a tempo">♩
+        <input id="tempo-out" type="number" inputmode="numeric" min="30" max="220" value="100" aria-label="Tempo in beats per minute">
+      </label>
+      <input type="range" id="tempo" min="30" max="220" value="100" hidden aria-hidden="true" tabindex="-1">
+    </div>
+    <div class="main-row">
+      <button class="loop" id="loop-btn" aria-pressed="false" title="Loop bars (tap a bar, then another)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        <span><span class="loop-word">Loop</span> <span id="loop-range">off</span></span>
+      </button>
+      <span class="pos" id="pos">Bar 1</span>
+      <button class="round" id="stop" aria-label="Back to start" title="Back to start (Home)">
+        <svg viewBox="0 0 24 24" class="fill"><path d="M6 6h2v12H6zM9.5 12L18 6v12z"/></svg>
+      </button>
+      <button class="rec round" id="rec" aria-label="Record" title="Record yourself"><span></span></button>
       <button class="play" id="play" aria-label="Play" title="Play / pause (Space)">
         <svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
       </button>
-      <button class="icon-btn" id="stop" aria-label="Back to start" title="Back to start (Home)">
-        <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12L18 6v12z"/></svg>
-      </button>
-      <button class="rec" id="rec" aria-label="Record" title="Record yourself"><span></span></button>
-      <span class="pos" id="pos">Bar 1</span>
     </div>
-
-    <div class="t-group">
-      <label class="ctl" title="Tempo">
-        <span class="ctl-lbl">Tempo</span>
-        <input type="range" id="tempo" min="30" max="220" value="100">
-        <input id="tempo-out" type="number" inputmode="numeric" min="30" max="220" value="100" aria-label="Tempo in beats per minute">
-      </label>
-      <div class="ctl" title="Transpose (semitones)">
-        <span class="ctl-lbl">Key</span>
+    <div class="chips-row">
+      <div class="keyctl" title="Transpose (semitones)">
+        <span>Key</span>
         <button class="step" id="tr-down" aria-label="Transpose down">−</button>
         <output id="tr-out">0</output>
         <button class="step" id="tr-up" aria-label="Transpose up">+</button>
       </div>
-    </div>
-
-    <div class="t-group">
-      <button class="toggle" id="loop-btn" aria-pressed="false" title="Loop bars (click a bar, shift-click another)">
-        Loop <span id="loop-range">off</span>
-      </button>
-      <button class="toggle" id="metro-btn" aria-pressed="false" title="Metronome">Metronome</button>
+      <button class="toggle" id="metro-btn" aria-pressed="false" title="Metronome">Click</button>
       <button class="toggle" id="countin-btn" aria-pressed="true" title="One bar count-in before playing">Count-in</button>
-      <button class="toggle" id="mixer-btn" aria-pressed="false" title="Mixer: solo, mute, volume, instrument and notes per track">Mixer</button>
     </div>
   </footer>
 </main>

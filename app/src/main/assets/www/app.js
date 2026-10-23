@@ -41,6 +41,38 @@ window.applyNativeTheme = (t) => { document.documentElement.dataset.theme = t ==
 if (native?.theme) applyNativeTheme(native.theme());
 const isTouch = matchMedia("(pointer: coarse)").matches;
 
+// One colour per voice, so a part looks the same on cards, in "My part" and in Voices.
+const VOICE_KINDS = [
+  ["soprano", /sopr|^s\.?$|^sop/i, "#e8590c"],
+  ["alto", /alt|contralto|mezzo|^a\.?$/i, "#9c36b5"],
+  ["tenor", /t[eé]no|^t\.?$/i, "#0c8599"],
+  ["bass", /bass|basse|bajo|baryton|bariton|^b\.?$/i, "#364fc7"],
+];
+const OTHER_COLOURS = ["#2f9e44", "#d6336c", "#f08c00", "#495057", "#1098ad", "#7048e8"];
+function voiceKind(name) { const k = VOICE_KINDS.find(([, re]) => re.test((name || "").trim())); return k ? k[0] : null; }
+function partColour(name, i = 0) {
+  const k = VOICE_KINDS.find(([, re]) => re.test((name || "").trim()));
+  return k ? k[2] : OTHER_COLOURS[i % OTHER_COLOURS.length];
+}
+function partShort(name) {
+  const k = voiceKind(name);
+  if (k) return k[0].toUpperCase();
+  const n = (name || "?").trim();
+  return n.length > 12 ? n.slice(0, 11) + "…" : n;
+}
+let myVoice = (() => { try { return localStorage.getItem("pr.voice") || ""; } catch { return ""; } })();
+function showMyVoice() {
+  $("#my-voice").value = myVoice;
+  $("#voice-dot").style.setProperty("--c", myVoice ? VOICE_KINDS.find(([k]) => k === myVoice)[2] : "var(--muted)");
+}
+$("#my-voice").addEventListener("change", (e) => {
+  myVoice = e.target.value;
+  try { localStorage.setItem("pr.voice", myVoice); } catch {}
+  showMyVoice();
+  renderGrid();
+});
+showMyVoice();
+
 // Downloads go through real server URLs with Content-Disposition, which both
 // desktop browsers and the Android app's download handler can save.
 function downloadUrl(url, name) {
@@ -93,14 +125,20 @@ function renderGrid() {
     const busy = s.status === "queued" || s.status === "scanning";
     const failed = s.status === "failed";
     const info = s.info || {};
-    const chips = [
-      s.source === "scan" ? `<span class="chip src">Scanned</span>` : s.source === "gallery" ? `<span class="chip src">Gallery</span>` : "",
-      info.parts ? `<span class="chip">${info.parts} part${info.parts > 1 ? "s" : ""}</span>` : "",
-      info.measures ? `<span class="chip">${info.measures} bars</span>` : "",
-      info.time ? `<span class="chip">${esc(info.time)}</span>` : "",
-      info.fifths != null ? `<span class="chip" title="${esc(info.key || "")}">${info.fifths === 0 ? "no ♯/♭" : Math.abs(info.fifths) + (info.fifths > 0 ? "♯" : "♭")}</span>` : "",
-    ].join("");
-    let body = `<div class="chips">${chips}</div>`;
+    const names = info.part_names && info.part_names.length ? info.part_names : [];
+    const partChips = names.length > 1
+      ? names.map((n, k) => `<span class="chip part" style="--c:${partColour(n, k)}" title="${esc(n || "Part " + (k + 1))}">${esc(n ? partShort(n) : k + 1)}</span>`).join("")
+      : info.parts ? `<span class="chip">${info.parts} part${info.parts > 1 ? "s" : ""}</span>` : "";
+    const keyTxt = info.fifths == null ? "" : info.fifths === 0 ? "no ♯/♭" : Math.abs(info.fifths) + (info.fifths > 0 ? "♯" : "♭");
+    const metaTxt = [info.measures && `${info.measures} bars`, info.time, info.tempo && `♩ ${info.tempo}`, keyTxt, info.lyrics && "lyrics"]
+      .filter(Boolean).join(" · ");
+    const mine = names.findIndex((n) => myVoice && voiceKind(n) === myVoice);
+    const c = mine >= 0 ? partColour(names[mine]) : "var(--ink)";
+    const mins = Math.round((s.practice_seconds || 0) / 60);
+    const badge = s.practice_seconds ? "" : s.source === "gallery" ? "Example" : "New";
+    let body = `<div class="chips">${partChips}<span class="card-meta">${esc(metaTxt)}</span></div>
+      <div class="card-foot"><div class="meter" style="--c:${c}"><i style="width:${Math.min(100, mins / 30 * 100)}%"></i></div>
+        <span>${s.practice_seconds ? fmtMins(s.practice_seconds) + " practised" : "not practised yet"}</span></div>`;
     if (busy) {
       const pct = Math.round((s.progress || 0) * 100);
       body = `<div class="muted small">${esc(s.message || "Reading the music…")}</div>
@@ -109,11 +147,11 @@ function renderGrid() {
       body = `<div class="err">Couldn't read this one. ${esc(s.error || "")}</div>`;
     }
     return `<div class="card ${busy ? "busy" : ""} ${failed ? "failed" : ""}" data-id="${s.id}" tabindex="0" role="button">
-      <div class="card-title">${esc(s.title)}</div>
+      <div class="card-top"><div class="card-title">${esc(s.title)}</div>
+        ${busy || failed ? "" : `<span class="badge ${badge === "New" ? "new" : ""}">${badge}</span>`}</div>
       ${body}
-      <div class="card-foot"><span>${s.practice_seconds ? fmtMins(s.practice_seconds) + " practised" : ""}</span>
-        <span>${new Date(s.created).toLocaleDateString()}</span></div>
-      <button class="del" data-del="${s.id}" aria-label="Delete ${esc(s.title)}" title="Delete">✕</button>
+      <button class="del" data-del="${s.id}" aria-label="Delete ${esc(s.title)}" title="Delete">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </div>`;
   }).join("");
 }
@@ -177,7 +215,6 @@ async function handleFiles(fileList) {
 }
 
 const drop = $("#drop");
-if (isTouch) $("#drop-title").textContent = "Add sheet music";
 ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", (e) => handleFiles(e.dataTransfer.files));
@@ -494,6 +531,16 @@ const Player = (() => {
   const ZOOM_MIN = 0.2, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.3;
   let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom4")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
   let trackState = {};      // key -> saved settings, survives transposition
+  // "My part": the part you sing. The others play quieter (or not at all), and the page shows
+  // your staff. my = part index, or null for the full choir.
+  let parts = [];           // [{ index, name, colour }]
+  let mix = { my: null, others: 35, mineSilent: false, mineOnly: true };
+  const mixKey = () => `pr.mix.${sid}`;
+  function saveMix() { try { localStorage.setItem(mixKey(), JSON.stringify(mix)); } catch {} }
+  function loadMix() {
+    try { const m = JSON.parse(localStorage.getItem(mixKey()) || "null"); if (m) return { ...mix, ...m }; } catch {}
+    return null;
+  }
 
   // transport state
   let playing = false, posQ = 0;
@@ -510,6 +557,7 @@ const Player = (() => {
     $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
     if (sid !== id) { semitones = 0; loop = { on: false, a: null, b: null }; posQ = 0; tracks = []; trackState = {}; playIntro = false; }
     sid = id;
+    mix = loadMix() || { my: undefined, others: 35, mineSilent: false, mineOnly: true };
     $("#loading").hidden = false;
     $("#loading").textContent = "Loading score…";
     meta = await api(`/api/scores/${id}`);
@@ -535,7 +583,7 @@ const Player = (() => {
         autoResize: false, backend: "svg", drawTitle: true, drawComposer: true, drawPartNames: true,
         // one rest per bar instead of "7 bars rest" blocks: every bar can be tapped, looped and counted
         autoGenerateMultipleRestMeasuresFromRestMeasures: false,
-        followCursor: false, cursorsOptions: [{ type: 0, color: "#2f6f6a", alpha: 0.35, follow: false }],
+        followCursor: false, cursorsOptions: [{ type: 0, color: "#364fc7", alpha: 0.3, follow: false }],
       });
     }
     xmlStats = { lyrics: (xml.match(/<lyric[\s>]/g) || []).length, chords: (xml.match(/<harmony[\s>]/g) || []).length };
@@ -543,11 +591,13 @@ const Player = (() => {
     dropDuplicateSubtitle(osmd);
     renderScore();
     buildTimeline();
+    findParts();
     if (applyHidden()) renderScore();
     if (first) {
       scoreBpm = Math.round(osmd.Sheet.DefaultStartTempoInBpm || meta.info?.tempo || 100);
       setTempo(scoreBpm);
     }
+    renderFocus();
     renderMixer();
     afterRender();
     $("#loading").hidden = true;
@@ -611,9 +661,14 @@ const Player = (() => {
       prevTs = ts;
       const notes = [];
       let minLen = Infinity;
+      const lyr = {};
       for (const ve of it.CurrentVoiceEntries) {
         const part = Math.max(0, insts.indexOf(ve.ParentVoice.Parent));
         const voice = ve.ParentVoice.VoiceId ?? 1;
+        if (lyr[part] === undefined) {
+          const syl = lyricOf(ve);
+          if (syl) lyr[part] = syl;
+        }
         const pitched = ve.Notes.filter((n) => !n.isRest() && n.halfTone !== undefined);
         const top = pitched.length > 1 ? Math.max(...pitched.map((n) => n.halfTone)) : null;
         for (const n of ve.Notes) {
@@ -632,7 +687,7 @@ const Player = (() => {
         }
       }
       prevMin = isFinite(minLen) ? minLen : 1;
-      steps.push({ q: clock, measure: it.CurrentMeasureIndex, notes, it: it.clone() });
+      steps.push({ q: clock, measure: it.CurrentMeasureIndex, notes, it: it.clone(), lyr });
       it.moveToNext();
     }
     // measures: first occurrence start + nominal length from the score
@@ -660,6 +715,58 @@ const Player = (() => {
     cursor.reset();
   }
 
+  // The first verse's syllable on a voice entry, with a trailing "-" when the word goes on.
+  function lyricOf(ve) {
+    const d = ve.LyricsEntries;
+    if (!d) return "";
+    let entries = [];
+    try { entries = typeof d.values === "function" ? d.values() : Object.values(d.table || d); } catch { return ""; }
+    const e = entries.map((x) => x?.value ?? x).find((x) => x && x.Text !== undefined);
+    if (!e || !e.Text) return "";
+    const w = e.Word, i = e.SyllableIndex ?? (w?.Syllables ? w.Syllables.indexOf(e) : -1);
+    const more = w?.Syllables && i >= 0 && i < w.Syllables.length - 1;
+    return e.Text + (more ? "-" : "");
+  }
+
+  function findParts() {
+    const insts = osmd.Sheet.Instruments;
+    const used = [...new Set(tracks.map((t) => t.part))].sort((a, b) => a - b);
+    parts = used.map((i) => ({ index: i, name: insts[i]?.Name || `Part ${i + 1}`, colour: partColour(insts[i]?.Name, i) }));
+    if (mix.my === undefined) {   // first time on this score: start on the part you sing
+      const p = parts.find((x) => myVoice && voiceKind(x.name) === myVoice);
+      mix.my = parts.length > 1 && p ? p.index : null;
+    }
+    if (mix.my !== null && !parts.some((x) => x.index === mix.my)) mix.my = null;
+    if (parts.length < 2) mix.my = null;
+  }
+  const partOf = (i) => parts.find((x) => x.index === i);
+
+  function renderFocus() {
+    const multi = parts.length > 1;
+    $("#focus").hidden = !multi;
+    const my = mix.my !== null ? partOf(mix.my) : null;
+    $("#player").style.setProperty("--part", my ? my.colour : "#364fc7");
+    $("#paper").classList.toggle("no-part", !my);
+    if (!multi) return;
+    $("#mypart").innerHTML = parts.map((p) => `<button role="radio" data-part="${p.index}" aria-checked="${mix.my === p.index}"
+        style="--c:${p.colour}" title="${esc(p.name)}">${esc(p.name)}</button>`).join("") +
+      `<button role="radio" class="all" data-part="all" aria-checked="${mix.my === null}" title="Everyone at the same level">All</button>`;
+    $("#others-row").hidden = mix.my === null;
+    $("#others").value = mix.mineSilent ? 100 : mix.others;
+    $("#others-out").textContent = mix.mineSilent ? "you sing" : othersLabel(mix.others);
+  }
+  function othersLabel(v) { return v <= 0 ? "off" : v < 25 ? "faint" : v < 60 ? "quiet" : v < 95 ? "softer" : "equal"; }
+
+  function setMix(change) {
+    Object.assign(mix, change);
+    saveMix();
+    syncSound();
+    renderFocus();
+    renderMixer();
+    refreshShown();
+    showLyrics(true);
+  }
+
   function nameTracks(insts) {
     tracks = tracks.filter((t) => t.count > 0);
     tracks.sort((a, b) => a.part - b.part || a.voice - b.voice || (a.role === "melody" ? -1 : 1));
@@ -682,11 +789,21 @@ const Player = (() => {
   let followMix = (() => { try { return localStorage.getItem("pr.followMix") !== "0"; } catch { return true; } })();
   // A track switched off in the mixer (its checkbox) is neither heard nor shown. Among the
   // tracks that are on, solo wins over mute.
+  function othersDb() { return mix.others <= 0 ? -Infinity : 20 * Math.log10(mix.others / 100); }
+  function trackDb(t) {
+    if (mix.my === null || t.part === mix.my || mix.mineSilent) return t.db;
+    return t.db + othersDb();
+  }
   function audible(t) {
     if (t.hidden) return false;
+    if (mix.my !== null && mix.mineSilent && t.part === mix.my) return false;
+    if (mix.my !== null && !mix.mineSilent && mix.others <= 0 && t.part !== mix.my) return false;
     return tracks.some((x) => x.solo && !x.hidden) ? t.solo : !t.mute;
   }
   function shown(t) {
+    if (mix.my !== null && mix.mineOnly) {
+      return t.part === mix.my && !t.hidden;
+    }
     const on = followMix ? audible(t) : !t.hidden;
     return tracks.some((x) => (followMix ? audible(x) : !x.hidden)) ? on : true;   // never an empty page
   }
@@ -745,37 +862,48 @@ const Player = (() => {
   function syncSound() {
     tracks.forEach((t) => Sound.prepare(t.instrument));   // start loading recorded voices right away
     if (!Sound.ready) return;
-    tracks.forEach((t, i) => Sound.setTrack(i, { mute: !audible(t), db: t.db, instrument: t.instrument }));
+    tracks.forEach((t, i) => Sound.setTrack(i, { mute: !audible(t), db: trackDb(t), instrument: t.instrument }));
   }
 
+  function faderPos(db) { return Math.max(0, Math.min(1, (db + 30) / 36)); }
   function renderMixer() {
     const anyHidden = tracks.some((t) => t.hidden);
     $("#mixer-hide-all").textContent = anyHidden ? "All on" : "All off";
-    $("#mixer-tracks").innerHTML = tracks.map((t, i) => `
-      <div class="track ${t.solo ? "soloed" : ""}" data-track="${i}">
-        <label class="track-show" title="Play this track and show its notes">
-          <input type="checkbox" data-act="show" ${t.hidden ? "" : "checked"}>
-          <span>On</span>
-        </label>
-        <div class="track-main">
-          <div class="track-head">
-            <span class="track-name">${esc(t.name)}</span>
-            <span class="track-count">${t.count} notes</span>
-            <select data-act="instrument" aria-label="Instrument for ${esc(t.name)}">
-              ${Object.entries(Sound.INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${k === t.instrument ? "selected" : ""}>${v}</option>`).join("")}
-            </select>
-          </div>
-          <div class="track-vol">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/></svg>
-            <input type="range" min="-30" max="6" step="1" value="${t.db}" data-act="vol" aria-label="Volume ${esc(t.name)}">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4zm11.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM13 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
-          </div>
+    const multi = parts.length > 1;
+    $("#quick").hidden = !multi;
+    $("#mine-only-row").hidden = !multi || mix.my === null;
+    $("#mine-only").checked = mix.mineOnly;
+    $("#mix-learn").setAttribute("aria-pressed", String(mix.my !== null && !mix.mineSilent));
+    $("#mix-sing").setAttribute("aria-pressed", String(mix.my !== null && mix.mineSilent));
+    $("#mix-full").setAttribute("aria-pressed", String(mix.my === null));
+    $("#mixer-tracks").innerHTML = tracks.map((t, i) => {
+      const p = partOf(t.part);
+      const c = p ? p.colour : partColour(t.name, i);
+      const eff = trackDb(t);
+      const dbTxt = !audible(t) ? "silent" : `${eff > 0 ? "+" : ""}${Number.isFinite(eff) ? Math.round(eff) : "−∞"} dB`;
+      const pos = faderPos(t.db);
+      return `
+      <div class="track ${t.solo ? "soloed" : ""}" data-track="${i}" style="--c:${c}">
+        <span class="track-name" title="${esc(t.name)}">${esc(t.name)}</span>
+        <span class="track-count">${t.count} notes</span>
+        <select data-act="instrument" aria-label="Sound for ${esc(t.name)}">
+          ${Object.entries(Sound.INSTRUMENTS).map(([k, v]) => `<option value="${k}" ${k === t.instrument ? "selected" : ""}>${v}</option>`).join("")}
+        </select>
+        <div class="fader">
+          <i style="height:calc(${pos} * (100% - 12px))"></i>
+          <b style="bottom:calc(${pos} * (100% - 26px) + 6px)"></b>
+          <input type="range" min="-30" max="6" step="1" value="${t.db}" data-act="vol" aria-label="Volume ${esc(t.name)}">
         </div>
+        <span class="track-db">${dbTxt}</span>
         <div class="track-btns">
-          <button data-act="solo" aria-pressed="${t.solo}">Solo</button>
-          <button data-act="mute" aria-pressed="${t.mute}">Mute</button>
+          <button data-act="solo" aria-pressed="${t.solo}" aria-label="Solo ${esc(t.name)}">S</button>
+          <button data-act="mute" aria-pressed="${t.mute}" aria-label="Mute ${esc(t.name)}">M</button>
         </div>
-      </div>`).join("") || `<p class="muted">This score has no notes to mix.</p>`;
+        <label class="track-show" title="Play this track and show its notes">
+          <input type="checkbox" data-act="show" ${t.hidden ? "" : "checked"}> On
+        </label>
+      </div>`;
+    }).join("") || `<p class="muted">This score has no notes to mix.</p>`;
     $("#mixer-btn").classList.toggle("has-changes", tracks.some((t) => t.mute || t.solo || t.hidden || t.db !== 0 || t.instrument !== "piano"));
   }
 
@@ -874,6 +1002,36 @@ const Player = (() => {
     }
     const num = measures[st.measure]?.number ?? 1;
     $("#pos").textContent = num === 0 ? "Pickup" : `Bar ${num}`;
+    showLyrics();
+  }
+
+  // The words of the current bar for my part (or the first part with words), the sung one lit.
+  let lyricKey = "";
+  function showLyrics(force = false) {
+    const strip = $("#lyric-strip");
+    if (!steps.length || curIdx < 0) { strip.hidden = true; return; }
+    const withWords = (p) => steps.some((x) => x.lyr && x.lyr[p]);
+    let p = mix.my !== null ? mix.my : parts.map((x) => x.index).find(withWords);
+    if (p === undefined && steps.some((x) => x.lyr && x.lyr[0])) p = 0;
+    if (p === undefined || !withWords(p)) { strip.hidden = true; return; }
+    const m = steps[curIdx].measure;
+    // this bar, plus the next one when this bar has only a word or two
+    let inBar = steps.map((x, i) => ({ x, i })).filter(({ x }) => x.measure === m && x.lyr?.[p]);
+    if (inBar.length < 3) inBar = inBar.concat(steps.map((x, i) => ({ x, i })).filter(({ x }) => x.measure === m + 1 && x.lyr?.[p]));
+    let now = -1;
+    for (const { i } of inBar) if (i <= curIdx) now = i;
+    const key = `${p}|${m}|${now}`;
+    if (key === lyricKey && !force) return;
+    lyricKey = key;
+    const name = partOf(p)?.name || "";
+    const num = measures[m]?.number ?? m + 1;
+    $("#lyric-head").textContent = [num === 0 ? "Pickup" : `Bar ${num}`, parts.length > 1 ? name : ""].filter(Boolean).join(" · ");
+    $("#lyric-line").innerHTML = inBar.length ? inBar.map(({ x, i }) => {
+      const t = x.lyr[p];
+      const cls = i === now ? "now" : i < now ? "past" : "";
+      return `<span class="${cls}">${esc(t)}</span>`;
+    }).join(" ").replace(/-<\/span> </g, "-</span>") : "<span class=\"past\">…</span>";
+    strip.hidden = false;
   }
 
   // ------------------------------------------------------ transport --
@@ -985,6 +1143,7 @@ const Player = (() => {
     if (playing) { const now = Tone.now(); const q = qAt(now); anchorQ = Math.max(q, anchorQ); anchorT = Math.max(now, anchorT); }
     bpm = v;
     $("#tempo").value = v; $("#tempo-out").value = v;
+    $$(".sp").forEach((b) => b.setAttribute("aria-pressed", String(Math.round(scoreBpm * +b.dataset.speed) === v)));
   }
 
   // ------------------------------------------------------ practice --
@@ -1161,7 +1320,27 @@ const Player = (() => {
   $("#osmd").addEventListener("contextmenu", (e) => e.preventDefault());
   $("#paper-scroll").addEventListener("scroll", pressCancel, { passive: true });
   $("#back").addEventListener("click", () => (location.hash = "#/"));
-  $("#side-btn").addEventListener("click", () => { $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true; });
+  $("#side-btn").addEventListener("click", () => {
+    $("#side").hidden = !$("#side").hidden; $("#compare").hidden = true;
+    $("#mixer").hidden = true; $("#mixer-btn").setAttribute("aria-pressed", "false");
+    $("#zoom-sheet").hidden = true; $("#zoom-btn").setAttribute("aria-pressed", "false");
+  });
+  $$(".sp").forEach((b) => b.addEventListener("click", () => setTempo(scoreBpm * +b.dataset.speed)));
+  $("#mypart").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-part]"); if (!b) return;
+    setMix({ my: b.dataset.part === "all" ? null : +b.dataset.part, mineSilent: false });
+  });
+  $("#others").addEventListener("input", (e) => {
+    mix.others = +e.target.value; mix.mineSilent = false;
+    $("#others-out").textContent = othersLabel(mix.others);
+    saveMix(); syncSound(); renderMixer();
+  });
+  $("#others").addEventListener("change", () => refreshShown());
+  const firstMine = () => mix.my ?? (parts.find((x) => myVoice && voiceKind(x.name) === myVoice) || parts[0])?.index ?? null;
+  $("#mix-learn").addEventListener("click", () => setMix({ my: firstMine(), mineSilent: false, others: Math.min(mix.others, 35) || 35 }));
+  $("#mix-sing").addEventListener("click", () => setMix({ my: firstMine(), mineSilent: true }));
+  $("#mix-full").addEventListener("click", () => setMix({ my: null, mineSilent: false }));
+  $("#mine-only").addEventListener("change", (e) => setMix({ mineOnly: e.target.checked }));
   // ---- scan details: raw timings and phone state, to compare scans ----
   function showScanLog(log) {
     $("#scan-log-block").hidden = !log;
@@ -1238,6 +1417,7 @@ const Player = (() => {
   tempoBox.addEventListener("focus", () => tempoBox.select());
   $("#mixer-btn").addEventListener("click", () => {
     $("#zoom-sheet").hidden = true; $("#zoom-btn").setAttribute("aria-pressed", "false");
+    $("#side").hidden = true;
     const m = $("#mixer"); m.hidden = !m.hidden;
     $("#mixer-btn").setAttribute("aria-pressed", String(!m.hidden));
   });
@@ -1262,7 +1442,14 @@ const Player = (() => {
   $("#mixer-tracks").addEventListener("input", (e) => {
     const el = e.target; const row = el.closest("[data-track]"); if (!row) return;
     const t = tracks[+row.dataset.track];
-    if (el.dataset.act === "vol") { t.db = +el.value; saveTrack(t); syncSound(); }
+    if (el.dataset.act === "vol") {
+      t.db = +el.value; saveTrack(t); syncSound();
+      const pos = faderPos(t.db);
+      row.querySelector(".fader i").style.height = `calc(${pos} * (100% - 12px))`;
+      row.querySelector(".fader b").style.bottom = `calc(${pos} * (100% - 26px) + 6px)`;
+      const eff = trackDb(t);
+      row.querySelector(".track-db").textContent = !audible(t) ? "silent" : `${eff > 0 ? "+" : ""}${Number.isFinite(eff) ? Math.round(eff) : "−∞"} dB`;
+    }
   });
   $("#mixer-tracks").addEventListener("change", (e) => {
     const el = e.target; const row = el.closest("[data-track]"); if (!row) return;
@@ -1382,7 +1569,9 @@ const Player = (() => {
   }
 
   return { open, close, barRect, scrollToBar, get state() { return { playing, posQ, bpm, semitones, loop, steps: steps.length, measures: measures.length, totalQ, zoom: userZoom, ...xmlStats,
-    tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden, shown: shown(t) })), staves: osmd ? osmd.Sheet.Instruments.filter((i) => i.Visible).length : 0 }; } };
+    tracks: tracks.map((t) => ({ name: t.name, count: t.count, mute: t.mute, solo: t.solo, db: t.db, instrument: t.instrument, hidden: t.hidden, shown: shown(t) })), staves: osmd ? osmd.Sheet.Instruments.filter((i) => i.Visible).length : 0,
+    my: mix.my, mineSilent: mix.mineSilent, others: mix.others, parts: parts.map((p) => p.name),
+    lyricShown: !$("#lyric-strip").hidden, lyricLine: $("#lyric-line").textContent }; } };
 })();
 
 async function openPlayer(id) {

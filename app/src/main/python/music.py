@@ -95,4 +95,6 @@ def summary(xml_text: str) -> dict:
         "fifths": ks.sharps if ks is not None else None,
         "time": ts.ratioString if ts is not None else None,
         "tempo": round(mm.number) if mm is not None and mm.number else None,
+        "part_names": [(p.partName or "").strip() for p in parts],
+        "lyrics": "<lyric" in xml_text,
     }

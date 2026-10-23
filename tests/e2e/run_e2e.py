@@ -605,6 +605,73 @@ def parts_follow_mix(app: App):
 
 
 @section
+def my_part(app: App):
+    # the part you sing, chosen once in the library, is where a choir score opens
+    app.library()
+    app.page.evaluate("Object.keys(localStorage).filter(k => k.startsWith('pr.mix')).forEach(k => localStorage.removeItem(k))")
+    app.page.select_option("#my-voice", "alto")
+    app.open("Chorale BWV 66.6 (Bach)")
+    st = app.state()
+    check("'My part' row lists the 4 parts", app.page.is_visible("#focus") and st["parts"][:4] == ["Soprano", "Alto", "Tenor", "Bass"], str(st["parts"]))
+    check("the score opens on the part I sing (Alto)", st["my"] == 1, str(st["my"]))
+    check("only my staff is on the page", st["staves"] == 1, str(st["staves"]))
+    app.set_toggle("#countin-btn", False)
+    r = app.play_for(1.5)
+    check("my part plays with the others quieter", r["peak"] > 0.01, f"{r['peak']:.3f}")
+    app.page.click("#stop")
+    app.page.locator("#mypart [data-part=all]").click()
+    app.page.wait_for_timeout(700)
+    st = app.state()
+    check("'All' shows the full choir", st["my"] is None and st["staves"] == 4, f"{st['my']} / {st['staves']}")
+    app.page.locator("#mypart [data-part='0']").click()
+    app.page.wait_for_timeout(700)
+    check("tapping Soprano makes it my part", app.state()["my"] == 0 and app.state()["staves"] == 1)
+
+    # quick mixes
+    app.page.click("#mixer-btn")
+    check("Voices shows the quick mixes", app.page.is_visible("#quick"))
+    app.page.click("#mix-sing")
+    app.page.wait_for_timeout(600)
+    st = app.state()
+    check("'Sing along' silences my part but keeps it on the page", st["mineSilent"] and st["staves"] == 1, str(st))
+    app.page.click("#mixer-close")
+    r = app.play_for(1.5)
+    check("'Sing along' still plays the other parts", r["peak"] > 0.01, f"{r['peak']:.3f}")
+    app.page.click("#stop")
+    app.page.click("#mixer-btn")
+    app.page.click("#mix-learn")
+    app.page.wait_for_timeout(500)
+    check("'Learn my part' brings my part back", not app.state()["mineSilent"] and app.state()["my"] == 0)
+    app.page.click("#mixer-close")
+    app.page.evaluate("() => { const o = document.querySelector('#others'); o.value = 0; o.dispatchEvent(new Event('input', {bubbles: true})); }")
+    r = app.play_for(1.2)
+    soprano_only = r["peak"]
+    app.page.click("#stop")
+    check("other voices at 0 leaves only my part", soprano_only > 0.01, f"{soprano_only:.3f}")
+    app.page.click("#mixer-btn")
+    app.page.click("#mix-full")
+    app.page.wait_for_timeout(500)
+    check("'Full choir' shows every part again", app.state()["my"] is None and app.state()["staves"] == 4)
+    app.page.click("#mixer-close")
+
+    # speed presets
+    score_bpm = int(app.page.input_value("#tempo-out"))
+    app.page.click(".sp[data-speed='0.5']")
+    check("50% halves the tempo", app.state()["bpm"] == round(score_bpm * 0.5), f"{score_bpm} -> {app.state()['bpm']}")
+    app.page.click(".sp[data-speed='1']")
+    check("100% goes back", app.state()["bpm"] == score_bpm)
+    app.library()
+    app.page.select_option("#my-voice", "")
+
+    # the words of the current bar, big, for a score with lyrics
+    app.open("lead sheet")
+    app.tap_bar(21)
+    app.page.wait_for_timeout(400)
+    st = app.state()
+    check("the lyrics strip shows the words of the bar", st["lyricShown"] and "laq" in st["lyricLine"], st["lyricLine"])
+
+
+@section
 def compare_original(app: App):
     app.open("ode photo")
     if app.page.is_visible("#compare-btn"):
@@ -666,7 +733,10 @@ def exports(app: App, ctx_downloads: bool):
     app.page.click("#tr-up"); app.wait_loaded()
     got = {}
     for fmt in ("pdf", "midi", "musicxml"):
-        app.page.click("#export-btn")
+        if not app.page.is_visible("#side"):
+            app.page.click("#side-btn")      # Export lives in the ⋯ "More" sheet
+        if not app.page.is_visible("#export-menu"):
+            app.page.click("#export-btn")
         if ctx_downloads:
             with app.page.expect_download(timeout=90000) as dl:
                 app.page.click(f"#export-menu [data-fmt={fmt}]")
@@ -990,6 +1060,7 @@ def main() -> int:
             mixer(app)
         display(app)
         parts_follow_mix(app)
+        my_part(app)
         compare_original(app)
         recording(app)
         exports(app, ctx_downloads=not a.android)

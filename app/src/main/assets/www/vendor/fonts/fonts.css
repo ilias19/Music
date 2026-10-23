@@ -4,3 +4,8 @@
 @font-face { font-family: "Inter"; font-weight: 400; font-display: swap; src: url(inter-latin-400-normal.woff2) format("woff2"); }
 @font-face { font-family: "Inter"; font-weight: 500; font-display: swap; src: url(inter-latin-500-normal.woff2) format("woff2"); }
 @font-face { font-family: "Inter"; font-weight: 600; font-display: swap; src: url(inter-latin-600-normal.woff2) format("woff2"); }
+/* Manrope: SIL Open Font License 1.1 (via @fontsource). */
+@font-face { font-family: "Manrope"; font-weight: 400 500; font-display: swap; src: url(manrope-latin-500-normal.woff2) format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 600; font-display: swap; src: url(manrope-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 700; font-display: swap; src: url(manrope-latin-700-normal.woff2) format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 800; font-display: swap; src: url(manrope-latin-800-normal.woff2) format("woff2"); }
