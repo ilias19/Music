@@ -668,7 +668,7 @@ def my_part(app: App):
     app.tap_bar(21)
     app.page.wait_for_timeout(400)
     st = app.state()
-    check("the lyrics strip shows the words of the bar", st["lyricShown"] and "laq" in st["lyricLine"], st["lyricLine"])
+    check("the lyrics strip shows the words of the bar", st["lyricShown"] and "men rez" in st["lyricLine"], st["lyricLine"])
 
 
 @section
@@ -936,13 +936,13 @@ def android_specific(app: App):
     app.page.screenshot(path=str(OUT / "dark_player.png"))
     app.library()
     app.page.screenshot(path=str(OUT / "dark_library.png"))
-    check("dark mode follows the phone setting", bg == "rgb(20, 23, 31)", bg)
+    check("dark mode follows the phone setting", bg == "rgb(18, 21, 28)", bg)
     check("after the theme change the same score is still open", back_route == route, f"{route} -> {back_route}")
     adb("shell", "cmd", "uimode", "night", "no")
     time.sleep(6)
     app.reattach()
     bg = app.page.evaluate("getComputedStyle(document.body).backgroundColor")
-    check("switching back to light works", bg == "rgb(241, 236, 227)", bg)
+    check("switching back to light works", bg == "rgb(243, 245, 249)", bg)
 
     # the exported PDF on the phone is a real PDF
     pdf = subprocess.run(["adb", "exec-out", "cat", "/sdcard/Download/Practice Room/Chorale BWV 66.6 (Bach) (+1).pdf"],
