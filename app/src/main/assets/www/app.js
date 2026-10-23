@@ -680,14 +680,15 @@ const Player = (() => {
   // every track but the soloed ones, disappears from the page too: its notes, and its whole staff
   // when nothing on that staff is left (a choir part). Never everything: then all is shown.
   let followMix = (() => { try { return localStorage.getItem("pr.followMix") !== "0"; } catch { return true; } })();
+  // A track switched off in the mixer (its checkbox) is neither heard nor shown. Among the
+  // tracks that are on, solo wins over mute.
   function audible(t) {
-    return tracks.some((x) => x.solo) ? t.solo : !t.mute;
+    if (t.hidden) return false;
+    return tracks.some((x) => x.solo && !x.hidden) ? t.solo : !t.mute;
   }
   function shown(t) {
-    if (t.hidden) return false;
-    if (!followMix) return true;
-    const any = tracks.some((x) => !x.hidden && audible(x));
-    return any ? audible(t) : true;
+    const on = followMix ? audible(t) : !t.hidden;
+    return tracks.some((x) => (followMix ? audible(x) : !x.hidden)) ? on : true;   // never an empty page
   }
   let shownKey = "";
   function applyHidden() {
@@ -744,19 +745,17 @@ const Player = (() => {
   function syncSound() {
     tracks.forEach((t) => Sound.prepare(t.instrument));   // start loading recorded voices right away
     if (!Sound.ready) return;
-    const anySolo = tracks.some((t) => t.solo);
-    tracks.forEach((t, i) => Sound.setTrack(i, {
-      mute: anySolo ? !t.solo : t.mute, db: t.db, instrument: t.instrument }));
+    tracks.forEach((t, i) => Sound.setTrack(i, { mute: !audible(t), db: t.db, instrument: t.instrument }));
   }
 
   function renderMixer() {
     const anyHidden = tracks.some((t) => t.hidden);
-    $("#mixer-hide-all").textContent = anyHidden ? "Show all notes" : "Hide all notes";
+    $("#mixer-hide-all").textContent = anyHidden ? "All on" : "All off";
     $("#mixer-tracks").innerHTML = tracks.map((t, i) => `
       <div class="track ${t.solo ? "soloed" : ""}" data-track="${i}">
-        <label class="track-show" title="Show this track's notes on the score">
+        <label class="track-show" title="Play this track and show its notes">
           <input type="checkbox" data-act="show" ${t.hidden ? "" : "checked"}>
-          <span>Notes</span>
+          <span>On</span>
         </label>
         <div class="track-main">
           <div class="track-head">
@@ -782,6 +781,7 @@ const Player = (() => {
 
   async function setHidden(list, hidden) {
     list.forEach((t) => { t.hidden = hidden; saveTrack(t); });
+    syncSound();
     applyHidden();
     renderScore();
     afterRender();

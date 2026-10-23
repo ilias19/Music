@@ -468,7 +468,7 @@ def mixer(app: App):
     check("hiding Melody hides its notes and beams", vis == 0 and app.state()["tracks"][0]["hidden"], f"{vis} beams visible")
     app.page.click("#mixer-hide-all")
     app.page.wait_for_timeout(600)
-    check("Show all notes brings them back", not any(t["hidden"] for t in app.state()["tracks"]))
+    check("'All on' brings them back", not any(t["hidden"] for t in app.state()["tracks"]))
     app.page.locator(".track", has_text="Harmony").locator("select").select_option("organ")
     r = run("organ")
     check("instrument change still plays", r["peak"] > 0.01, f"{r['peak']:.3f}")
@@ -576,6 +576,31 @@ def parts_follow_mix(app: App):
     r = app.play_for(1.5)
     check("score still plays after hiding staves", r["peak"] > 0.01, f"{r['peak']:.3f}")
     app.page.click("#stop")
+
+    # switching a track off (its checkbox) hides it AND silences it
+    if not app.page.is_visible("#mixer"):
+        app.page.click("#mixer-btn")
+    for i in (1, 2, 3):
+        app.page.locator(".track").nth(i).locator("input[data-act=show]").uncheck()
+        app.page.wait_for_timeout(500)
+    st = app.state()
+    check("switching off 3 parts leaves one staff", st["staves"] == 1, str(st["staves"]))
+    app.page.click("#mixer-close")
+    r = app.play_for(1.5)
+    check("only the part left on is heard", r["peak"] > 0.01, f"{r['peak']:.3f}")
+    app.page.click("#stop")
+    app.page.click("#mixer-btn")
+    app.page.locator(".track").nth(0).locator("input[data-act=show]").uncheck()
+    app.page.wait_for_timeout(500)
+    app.page.click("#mixer-close")
+    r = app.play_for(1.5)
+    check("every part switched off is silent", r["peak"] < 0.002, f"{r['peak']:.4f}")
+    app.page.click("#stop")
+    app.page.click("#mixer-btn")
+    app.page.click("#mixer-hide-all")     # "All on"
+    app.page.wait_for_timeout(600)
+    check("'All on' brings every part back", app.state()["staves"] == 4 and all(t["shown"] for t in app.state()["tracks"]),
+          str(app.state()["staves"]))
     app.page.click("#mixer-close") if app.page.is_visible("#mixer") else None
 
 
