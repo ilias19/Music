@@ -218,6 +218,71 @@ const Sound = (() => {
     throw new Error("no samples");
   }
 
+  // Sung voices: recorded "aah"/"ooh" samples (FluidR3 GM, CC-BY 3.0), loaded the first time
+  // someone picks them. They're 3 s long; longer notes need more, so each one is extended with
+  // crossfaded repeats of its steady middle (a choir "aah" has no attack to repeat there).
+  const SUNG = {
+    choir: { dir: "choir_aahs", gain: 1.0 },
+    ooh: { dir: "voice_oohs", gain: 0.8 },
+  };
+  const SUNG_NOTES = ["A2", "C3", "Eb3", "Gb3", "A3", "C4", "Eb4", "Gb4", "A4", "C5", "Eb5", "Gb5", "A5", "C6"];
+  const sungBuffers = {}, sungLoading = {};
+
+  function extend(buf, seconds = 9) {
+    const sr = buf.sampleRate, src = buf.getChannelData(0);
+    const other = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+    const mono = Float32Array.from(src, (v, i) => other ? (v + other[i]) / 2 : v);
+    const L0 = Math.floor(0.9 * sr), L1 = mono.length - Math.floor(0.08 * sr), X = Math.floor(0.35 * sr);
+    if (L1 - L0 < 2 * X) return { data: mono, sr };
+    const out = new Float32Array(Math.floor(seconds * sr));
+    out.set(mono.subarray(0, Math.min(L1, out.length)));
+    let pos = L1 - X;                     // each repeat starts by fading in over the previous tail
+    while (pos < out.length) {
+      for (let i = 0; i < L1 - L0 && pos + i < out.length; i++) {
+        const v = mono[L0 + i];
+        if (i < X) {
+          const a = i / X;                // equal-power crossfade
+          out[pos + i] = out[pos + i] * Math.cos(a * Math.PI / 2) + v * Math.sin(a * Math.PI / 2);
+        } else out[pos + i] = v;
+      }
+      pos += (L1 - L0) - X;
+    }
+    return { data: out, sr };
+  }
+
+  function loadSung(kind) {
+    if (sungBuffers[kind]) return Promise.resolve(sungBuffers[kind]);
+    if (!sungLoading[kind]) {
+      const { dir } = SUNG[kind];
+      const bases = [`samples/${dir}/`, `https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/${dir}-mp3/`];
+      sungLoading[kind] = (async () => {
+        for (const base of bases) {
+          try {
+            const pairs = await Promise.all(SUNG_NOTES.map((n) =>
+              new Tone.ToneAudioBuffer().load(`${base}${n}.mp3`).then((b) => [Tone.Frequency(n).toNote(), b])));
+            const ext = pairs.map(([n, b]) => [n, extend(b.get())]);
+            // same loudness as the piano: normalise the set to one peak level
+            const peak = Math.max(...ext.map(([, e]) => e.data.reduce((m, v) => Math.max(m, Math.abs(v)), 0))) || 1;
+            const k = 0.55 * SUNG[kind].gain / peak;
+            const map = {};
+            for (const [n, e] of ext) {
+              for (let i = 0; i < e.data.length; i++) e.data[i] *= k;
+              const ab = Tone.getContext().createBuffer(1, e.data.length, e.sr);
+              ab.copyToChannel(e.data, 0);
+              map[n] = new Tone.ToneAudioBuffer(ab);
+            }
+            sungBuffers[kind] = map;
+            rebuildVoices();
+            return map;
+          } catch (e) { console.warn("sung samples", base, e); }
+        }
+        throw new Error("no sung samples");
+      })();
+      sungLoading[kind].catch(() => toast("Voice samples unavailable — using a built-in voice."));
+    }
+    return sungLoading[kind];
+  }
+
   async function init() {
     if (master) return;
     await Tone.start();
@@ -232,7 +297,8 @@ const Sound = (() => {
   // One channel per mixer track: instrument -> volume -> master.
   const INSTRUMENTS = {
     piano: "Piano",
-    voice: "Voice (aah)",
+    choir: "Choir (aah)",
+    ooh: "Voice (ooh)",
     soft: "Soft synth",
     organ: "Organ",
     bass: "Bass",
@@ -265,7 +331,11 @@ const Sound = (() => {
   }
 
   function makeInstrument(kind) {
-    if (kind === "voice") return makeVoice();
+    if (SUNG[kind]) {
+      if (sungBuffers[kind]) return new Tone.Sampler({ urls: sungBuffers[kind], attack: 0.02, release: 0.45, volume: -2 });
+      loadSung(kind);
+      return makeVoice();                 // until the recordings are loaded
+    }
     if (kind === "piano") return buffers ? new Tone.Sampler({ urls: buffers, release: 1 }) : makeSynth();
     if (kind === "organ") return new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: "fatsine4", count: 3, spread: 18 },
@@ -286,15 +356,19 @@ const Sound = (() => {
       const kind = "piano";
       const inst = makeInstrument(kind);
       inst.connect(vol);
-      voices.set(track, { inst, vol, gate, muted: false, kind, sampled: kind === "piano" && !!buffers });
+      voices.set(track, { inst, vol, gate, muted: false, kind, sampled: isSampledReady(kind) });
     }
     return voices.get(track);
   }
 
+  function isSampledReady(kind) {
+    return (kind === "piano" && !!buffers) || (!!SUNG[kind] && !!sungBuffers[kind]);
+  }
+
   function rebuildVoices() {
     for (const v of voices.values()) {
-      if (v.kind !== "piano" || v.sampled || !buffers) continue;
-      const inst = makeInstrument("piano");
+      if (v.sampled || !isSampledReady(v.kind)) continue;
+      const inst = makeInstrument(v.kind);
       inst.connect(v.vol);
       v.inst.dispose();
       v.inst = inst; v.sampled = true;
@@ -322,7 +396,7 @@ const Sound = (() => {
       v.inst = makeInstrument(instrument);
       v.inst.connect(v.vol);
       v.kind = instrument;
-      v.sampled = instrument === "piano" && !!buffers;
+      v.sampled = isSampledReady(instrument);
     }
   }
 
@@ -344,7 +418,9 @@ const Sound = (() => {
     master.gain.linearRampToValueAtTime(1, at + 0.01);
   }
 
-  return { init, note, click, setTrack, silence, open, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; } };
+  return { init, note, click, setTrack, silence, open, INSTRUMENTS, get ready() { return !!master; }, get loading() { return loading; },
+    get sungLoaded() { return Object.keys(sungBuffers); }, get sungBuffers() { return sungBuffers; },
+    prepare(kind) { if (SUNG[kind]) loadSung(kind).catch(() => {}); } };
 })();
 
 // Many files repeat the title as the movement title; OSMD would print it twice.
@@ -415,8 +491,8 @@ const Player = (() => {
   // Mixer: one track per part / voice, with chords split into melody (top note) and harmony.
   let tracks = [];          // [{ key, name, count, mute, solo, db, instrument, hidden, notes:[Note] }]
   let xmlStats = { lyrics: 0, chords: 0 };
-  const ZOOM_MIN = 0.5, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.59;
-  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom2")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
+  const ZOOM_MIN = 0.3, ZOOM_MAX = 2.5, ZOOM_DEFAULT = 0.5;
+  let userZoom = (() => { try { return parseFloat(localStorage.getItem("pr.zoom3")) || ZOOM_DEFAULT; } catch { return ZOOM_DEFAULT; } })();
   let trackState = {};      // key -> saved settings, survives transposition
 
   // transport state
@@ -640,6 +716,7 @@ const Player = (() => {
 
   // Effective audibility: solo wins over mute.
   function syncSound() {
+    tracks.forEach((t) => Sound.prepare(t.instrument));   // start loading recorded voices right away
     if (!Sound.ready) return;
     const anySolo = tracks.some((t) => t.solo);
     tracks.forEach((t, i) => Sound.setTrack(i, {
@@ -1086,7 +1163,7 @@ const Player = (() => {
   function setZoom(z, rerender = true) {
     userZoom = Math.round(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)) * 100) / 100;
     $("#zoom-val").textContent = `${Math.round(userZoom * 100)}%`;
-    try { localStorage.setItem("pr.zoom2", String(userZoom)); } catch {}
+    try { localStorage.setItem("pr.zoom3", String(userZoom)); } catch {}
     if (rerender && osmd) { renderScore(); afterRender(); }
   }
   $("#zoom-btn").addEventListener("click", () => {

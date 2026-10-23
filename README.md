@@ -83,4 +83,5 @@ The emulator self-test logs the time for the device it ran on.
 
 homr is **AGPL-3.0** (`python/homr/LICENSE`). That's fine for your own phone, but if you distribute the app to others you must
 offer them the source. OpenSheetMusicDisplay BSD-3, Tone.js MIT, jsPDF MIT, svg2pdf.js MIT, music21 BSD,
-Chaquopy MIT, ONNX Runtime MIT, Fraunces/Inter OFL-1.1, Salamander Grand Piano samples CC-BY 3.0 (Alexander Holm).
+Chaquopy MIT, ONNX Runtime MIT, pdfminer.six MIT, Fraunces/Inter OFL-1.1, Salamander Grand Piano samples CC-BY 3.0 (Alexander Holm),
+Choir Aahs and Voice Oohs samples from the FluidR3 GM SoundFont CC-BY 3.0 (Frank Wen, via gleitz/midi-js-soundfonts).
