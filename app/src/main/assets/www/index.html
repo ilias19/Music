@@ -165,14 +165,19 @@
   </div>
 
   <footer class="transport">
+    <div class="tempo-row">
+      <label class="tempo-bar" title="Tempo">
+        <span class="tempo-lbl">Tempo</span>
+        <input type="range" id="tempo" min="30" max="220" value="100" aria-label="Tempo">
+      </label>
+      <label class="bpm" title="Type a tempo">♩
+        <input id="tempo-out" type="number" inputmode="numeric" min="30" max="220" value="100" aria-label="Tempo in beats per minute">
+      </label>
+    </div>
     <div class="speed" role="group" aria-label="Speed">
       <button class="sp" data-speed="0.5">50%</button>
       <button class="sp" data-speed="0.75">75%</button>
       <button class="sp" data-speed="1">100%</button>
-      <label class="bpm" title="Type a tempo">♩
-        <input id="tempo-out" type="number" inputmode="numeric" min="30" max="220" value="100" aria-label="Tempo in beats per minute">
-      </label>
-      <input type="range" id="tempo" min="30" max="220" value="100" hidden aria-hidden="true" tabindex="-1">
     </div>
     <div class="main-row">
       <button class="loop" id="loop-btn" aria-pressed="false" title="Loop bars (tap a bar, then another)">

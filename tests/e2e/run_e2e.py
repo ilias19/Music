@@ -655,6 +655,11 @@ def my_part(app: App):
     app.page.click("#mixer-close")
 
     # speed presets
+    check("the tempo bar is on screen", app.page.is_visible("#tempo"))
+    box = app.page.locator("#tempo").bounding_box()
+    app.page.mouse.click(box["x"] + box["width"] * 0.9, box["y"] + box["height"] / 2)
+    check("dragging the tempo bar changes the tempo", app.state()["bpm"] > 180, str(app.state()["bpm"]))
+    app.page.click(".sp[data-speed='1']")
     score_bpm = int(app.page.input_value("#tempo-out"))
     app.page.click(".sp[data-speed='0.5']")
     check("50% halves the tempo", app.state()["bpm"] == round(score_bpm * 0.5), f"{score_bpm} -> {app.state()['bpm']}")
